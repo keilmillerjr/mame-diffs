@@ -1,0 +1,21 @@
+diff -Nru src/osd/modules/render/drawd3d.cpp src-d3d/osd/modules/render/drawd3d.cpp
+--- src/osd/modules/render/drawd3d.cpp	Wed Oct 25 02:34:04 2017
++++ src-d3d/osd/modules/render/drawd3d.cpp	Fri Nov 10 10:53:35 2017
+@@ -1092,7 +1092,7 @@
+ 		success = false;
+ 	}
+ 
+-	if (caps.TextureCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL)
++/*	if (caps.TextureCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL)
+ 	{
+ 		osd_printf_error("Direct3D Error: Your graphics card does not fully support non-power-of-two\n");
+ 		osd_printf_error("textures.\n");
+@@ -1108,7 +1108,7 @@
+ 	{
+ 		osd_printf_error("Direct3D Error: Your graphics card does not support non-square textures.\n");
+ 		success = false;
+-	}
++	} */
+ 
+ 	// verify texture formats
+ 	result = d3dintf->d3dobj->CheckDeviceFormat(m_adapter, D3DDEVTYPE_HAL, m_pixformat, 0, D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8);
