@@ -1,0 +1,2064 @@
+diff -Nru src/devices/cpu/h6280/h6280.cpp src-fx/devices/cpu/h6280/h6280.cpp
+--- src/devices/cpu/h6280/h6280.cpp	Wed Jan 30 04:54:04 2019
++++ src-fx/devices/cpu/h6280/h6280.cpp	Sat Feb  2 22:01:35 2019
+@@ -153,7 +153,8 @@
+ void h6280_device::internal_map(address_map &map)
+ {
+ 	map(0x1fe800, 0x1fe80f).mirror(0x3f0).rw(FUNC(h6280_device::io_buffer_r), FUNC(h6280_device::psg_w));
+-	map(0x1fec00, 0x1fec01).mirror(0x3fe).rw(FUNC(h6280_device::timer_r), FUNC(h6280_device::timer_w));
++	//map(0x1fec00, 0x1fec01).mirror(0x3fe).rw(FUNC(h6280_device::timer_r), FUNC(h6280_device::timer_w));     // MAMEFX
++	map(0x1fec00, 0x1fec01).mirror(0x3fe).r(FUNC(h6280_device::timer_r)).nopw();                              // MAMEFX - fix various sound issues
+ 	map(0x1ff000, 0x1ff000).mirror(0x3ff).rw(FUNC(h6280_device::port_r), FUNC(h6280_device::port_w));
+ 	map(0x1ff400, 0x1ff403).mirror(0x3fc).rw(FUNC(h6280_device::irq_status_r), FUNC(h6280_device::irq_status_w));
+ }
+diff -Nru src/devices/sound/qs1000.cpp src-fx/devices/sound/qs1000.cpp
+--- src/devices/sound/qs1000.cpp	Wed Jan 30 04:54:13 2019
++++ src-fx/devices/sound/qs1000.cpp	Sat Feb  2 22:01:59 2019
+@@ -517,8 +517,8 @@
+ 					chan.m_addr = (chan.m_addr + (chan.m_acc >> 18)) & QS1000_ADDRESS_MASK;
+ 					chan.m_acc &= ((1 << 18) - 1);
+ 
+-					outputs[0][samp] += (result * 4 * lvol * vol) >> 12;
+-					outputs[1][samp] += (result * 4 * rvol * vol) >> 12;
++					outputs[0][samp] += (result * 8 * lvol * vol) >> 12;
++					outputs[1][samp] += (result * 8 * rvol * vol) >> 12;
+ 				}
+ 			}
+ 			else
+@@ -546,8 +546,8 @@
+ 					chan.m_addr = (chan.m_addr + (chan.m_acc >> 18)) & QS1000_ADDRESS_MASK;
+ 					chan.m_acc &= ((1 << 18) - 1);
+ 
+-					outputs[0][samp] += (result * lvol * vol) >> 12;
+-					outputs[1][samp] += (result * rvol * vol) >> 12;
++					outputs[0][samp] += (result * 8 * lvol * vol) >> 12;
++					outputs[1][samp] += (result * 8 * rvol * vol) >> 12;
+ 				}
+ 			}
+ 		}
+diff -Nru src/mame/drivers/aliens.cpp src-fx/mame/drivers/aliens.cpp
+--- src/mame/drivers/aliens.cpp	Wed Jan 30 04:54:20 2019
++++ src-fx/mame/drivers/aliens.cpp	Sat Feb  2 21:00:23 2019
+@@ -201,7 +201,7 @@
+ 	m_maincpu->set_addrmap(AS_PROGRAM, &aliens_state::aliens_map);
+ 	m_maincpu->line().set(FUNC(aliens_state::banking_callback));
+ 
+-	Z80(config, m_audiocpu, XTAL(3'579'545)); /* verified on pcb */
++	Z80(config, m_audiocpu, XTAL(3'579'545)*2); /* verified on pcb */ //MAMEFX
+ 	m_audiocpu->set_addrmap(AS_PROGRAM, &aliens_state::aliens_sound_map);
+ 
+ 	ADDRESS_MAP_BANK(config, "bank0000").set_map(&aliens_state::bank0000_map).set_options(ENDIANNESS_BIG, 8, 11, 0x400);
+diff -Nru src/mame/drivers/astrocde.cpp src-fx/mame/drivers/astrocde.cpp
+--- src/mame/drivers/astrocde.cpp	Wed Jan 30 04:54:20 2019
++++ src-fx/mame/drivers/astrocde.cpp	Sat Feb  2 21:00:34 2019
+@@ -1187,7 +1187,7 @@
+ 
+ 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+ 	m_screen->set_raw(ASTROCADE_CLOCK, 455, 0, 352, 262, 0, 240);
+-	m_screen->set_default_position(1.1, 0.0, 1.18, -0.018);    /* clip out borders */
++	//m_screen->set_default_position(1.1, 0.0, 1.18, -0.018);    /* clip out borders */ // MAMEFX
+ 	m_screen->set_screen_update(FUNC(astrocde_state::screen_update_astrocde));
+ 	m_screen->set_palette(m_palette);
+ }
+diff -Nru src/mame/drivers/battlera.cpp src-fx/mame/drivers/battlera.cpp
+--- src/mame/drivers/battlera.cpp	Wed Jan 30 04:54:21 2019
++++ src-fx/mame/drivers/battlera.cpp	Sat Feb  2 20:33:29 2019
+@@ -274,7 +274,7 @@
+ 
+ 	/* video hardware */
+ 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+-	m_screen->set_raw(MAIN_CLOCK, huc6260_device::WPF, 64, 64 + 1024 + 64, huc6260_device::LPF, 18, 18 + 242);
++	m_screen->set_raw(MAIN_CLOCK, huc6260_device::WPF, 128, 64 + 1024 + 64, huc6260_device::LPF, 16, 16 + 240);
+ 	m_screen->set_screen_update(FUNC(battlera_state::screen_update));
+ 	m_screen->set_palette(m_huc6260);
+ 
+diff -Nru src/mame/drivers/btime.cpp src-fx/mame/drivers/btime.cpp
+--- src/mame/drivers/btime.cpp	Wed Jan 30 04:54:21 2019
++++ src-fx/mame/drivers/btime.cpp	Sat Feb  2 21:00:47 2019
+@@ -1291,7 +1291,8 @@
+ 
+ 	/* video hardware */
+ 	MCFG_SCREEN_ADD(m_screen, RASTER)
+-	MCFG_SCREEN_RAW_PARAMS(HCLK, 384, 8, 248, 272, 8, 248)
++	//MCFG_SCREEN_RAW_PARAMS(HCLK, 384, 8, 248, 272, 8, 248)  // MAMEFX
++	MCFG_SCREEN_RAW_PARAMS(HCLK, 384, 0, 256, 272, 8, 248) // MAMEFX
+ 	MCFG_SCREEN_UPDATE_DRIVER(btime_state, screen_update_btime)
+ 	MCFG_SCREEN_PALETTE(m_palette)
+ 
+diff -Nru src/mame/drivers/chinagat.cpp src-fx/mame/drivers/chinagat.cpp
+--- src/mame/drivers/chinagat.cpp	Wed Jan 30 04:54:22 2019
++++ src-fx/mame/drivers/chinagat.cpp	Sat Feb  2 20:35:02 2019
+@@ -588,7 +588,7 @@
+ 
+ 	/* video hardware */
+ 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+-	m_screen->set_raw(PIXEL_CLOCK, 384, 0, 256, 272, 0, 240);   /* based on ddragon driver */
++	m_screen->set_raw(PIXEL_CLOCK, 384, 8, 248, 272, 8, 232);   /* based on ddragon driver */
+ 	m_screen->set_screen_update(FUNC(chinagat_state::screen_update_ddragon));
+ 	m_screen->set_palette(m_palette);
+ 
+diff -Nru src/mame/drivers/crimfght.cpp src-fx/mame/drivers/crimfght.cpp
+--- src/mame/drivers/crimfght.cpp	Wed Jan 30 04:54:22 2019
++++ src-fx/mame/drivers/crimfght.cpp	Sat Feb  2 21:01:03 2019
+@@ -306,7 +306,7 @@
+ 	m_maincpu->set_addrmap(AS_PROGRAM, &crimfght_state::crimfght_map);
+ 	m_maincpu->line().set(FUNC(crimfght_state::banking_callback));
+ 
+-	Z80(config, m_audiocpu, XTAL(3'579'545)); /* verified on pcb */
++	Z80(config, m_audiocpu, XTAL(3'579'545)*2); /* verified on pcb */ //MAMEFX
+ 	m_audiocpu->set_addrmap(AS_PROGRAM, &crimfght_state::crimfght_sound_map);
+ 	m_audiocpu->set_irq_acknowledge_callback(FUNC(crimfght_state::audiocpu_irq_ack));
+ 
+diff -Nru src/mame/drivers/ddragon.cpp src-fx/mame/drivers/ddragon.cpp
+--- src/mame/drivers/ddragon.cpp	Wed Jan 30 04:54:23 2019
++++ src-fx/mame/drivers/ddragon.cpp	Sat Feb  2 23:11:20 2019
+@@ -992,6 +992,13 @@
+ 	m_adpcm[1]->add_route(ALL_OUTPUTS, "mono", 0.50);
+ }
+ 
++
++void ddragon_state::ddragoncut(machine_config &config)
++{
++	ddragon(config);
++	m_screen->set_raw(PIXEL_CLOCK, 384, 8, 248, 272, 8, 232);
++}
++
+ void ddragon_state::ddragonb(machine_config &config)
+ {
+ 	ddragon(config);
+@@ -1035,7 +1042,7 @@
+ 	PALETTE(config, m_palette).set_format(palette_device::xBGR_444, 512);
+ 
+ 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+-	m_screen->set_raw(PIXEL_CLOCK, 384, 0, 256, 272, 0, 240);
++	m_screen->set_raw(PIXEL_CLOCK, 384, 8, 248, 272, 8, 232);
+ 	m_screen->set_screen_update(FUNC(ddragon_state::screen_update_ddragon));
+ 	m_screen->set_palette(m_palette);
+ 
+@@ -1086,7 +1093,7 @@
+ 	PALETTE(config, m_palette).set_format(palette_device::xBGR_444, 512);
+ 
+ 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
+-	m_screen->set_raw(PIXEL_CLOCK, 384, 0, 256, 272, 0, 240);
++	m_screen->set_raw(PIXEL_CLOCK, 384, 8, 248, 272, 8, 232);
+ 	m_screen->set_screen_update(FUNC(ddragon_state::screen_update_ddragon));
+ 	m_screen->set_palette(m_palette);
+ 
+@@ -1120,6 +1127,13 @@
+ 	ADDRESS_MAP_BANK(config, "darktowr_bank").set_map(&darktowr_state::darktowr_banked_map).set_options(ENDIANNESS_BIG, 8, 17, 0x4000);
+ }
+ 
++void darktowr_state::tstrikecut(machine_config &config)
++{
++	darktowr(config);
++	m_screen->set_raw(PIXEL_CLOCK, 384, 0, 240, 272, 0, 240);
++}
++
++
+ void toffy_state::toffy(machine_config &config)
+ {
+ 	ddragon(config);
+@@ -2200,13 +2214,13 @@
+  *
+  *************************************/
+ 
+-GAME( 1987, ddragon,      0,        ddragon,     ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan",                         "Double Dragon (Japan)",                       MACHINE_SUPPORTS_SAVE )
+-GAME( 1987, ddragonw,     ddragon,  ddragon,     ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito license)",         "Double Dragon (World set 1)",                 MACHINE_SUPPORTS_SAVE )
+-GAME( 1987, ddragonw1,    ddragon,  ddragon,     ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito license)",         "Double Dragon (World set 2)",                 MACHINE_SUPPORTS_SAVE )
+-GAME( 1987, ddragonu,     ddragon,  ddragon,     ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito America license)", "Double Dragon (US set 1)",                    MACHINE_SUPPORTS_SAVE )
+-GAME( 1987, ddragonua,    ddragon,  ddragon,     ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito America license)", "Double Dragon (US set 2)",                    MACHINE_SUPPORTS_SAVE )
+-GAME( 1987, ddragonub,    ddragon,  ddragon,     ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito America license)", "Double Dragon (US set 3)",                    MACHINE_SUPPORTS_SAVE )
+-GAME( 1987, ddragonb2,    ddragon,  ddragon,     ddragon,  ddragon_state,  init_ddragon,     ROT0, "bootleg",                               "Double Dragon (bootleg)",                     MACHINE_SUPPORTS_SAVE )
++GAME( 1987, ddragon,      0,        ddragoncut,  ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan",                         "Double Dragon (Japan)",                       MACHINE_SUPPORTS_SAVE )
++GAME( 1987, ddragonw,     ddragon,  ddragoncut,  ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito license)",         "Double Dragon (World set 1)",                 MACHINE_SUPPORTS_SAVE )
++GAME( 1987, ddragonw1,    ddragon,  ddragoncut,  ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito license)",         "Double Dragon (World set 2)",                 MACHINE_SUPPORTS_SAVE )
++GAME( 1987, ddragonu,     ddragon,  ddragoncut,  ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito America license)", "Double Dragon (US set 1)",                    MACHINE_SUPPORTS_SAVE )
++GAME( 1987, ddragonua,    ddragon,  ddragoncut,  ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito America license)", "Double Dragon (US set 2)",                    MACHINE_SUPPORTS_SAVE )
++GAME( 1987, ddragonub,    ddragon,  ddragoncut,  ddragon,  ddragon_state,  init_ddragon,     ROT0, "Technos Japan (Taito America license)", "Double Dragon (US set 3)",                    MACHINE_SUPPORTS_SAVE )
++GAME( 1987, ddragonb2,    ddragon,  ddragoncut,  ddragon,  ddragon_state,  init_ddragon,     ROT0, "bootleg",                               "Double Dragon (bootleg)",                     MACHINE_SUPPORTS_SAVE )
+ GAME( 1987, ddragonb,     ddragon,  ddragonb,    ddragon,  ddragon_state,  init_ddragon,     ROT0, "bootleg",                               "Double Dragon (bootleg with HD6309)",         MACHINE_SUPPORTS_SAVE ) // according to dump notes
+ GAME( 1987, ddragonba,    ddragon,  ddragonba,   ddragon,  ddragon_state,  init_ddragon,     ROT0, "bootleg",                               "Double Dragon (bootleg with M6803)",          MACHINE_SUPPORTS_SAVE )
+ GAME( 1987, ddragon6809,  ddragon,  ddragon6809, ddragon,  ddragon_state,  init_ddragon6809, ROT0, "bootleg",                               "Double Dragon (bootleg with 3xM6809, set 1)", MACHINE_NOT_WORKING )
+@@ -2218,8 +2232,8 @@
+ GAME( 1988, ddragon2b,    ddragon2, ddragon2,    ddragon2, ddragon_state,  init_ddragon2,    ROT0, "bootleg",       "Double Dragon II - The Revenge (US, bootleg)", MACHINE_SUPPORTS_SAVE )
+ 
+ /* these were conversions of double dragon */
+-GAME( 1991, tstrike,      0,        darktowr,    tstrike,  darktowr_state, init_darktowr,    ROT0, "East Coast Coin Company", "Thunder Strike (set 1)",        MACHINE_SUPPORTS_SAVE ) // same manufacturer as The Game Room?
+-GAME( 1991, tstrikea,     tstrike,  darktowr,    tstrike,  darktowr_state, init_darktowr,    ROT0, "The Game Room",           "Thunder Strike (set 2, older)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, tstrike,      0,        tstrikecut,  tstrike,  darktowr_state, init_darktowr,    ROT0, "East Coast Coin Company", "Thunder Strike (set 1)",        MACHINE_SUPPORTS_SAVE ) // same manufacturer as The Game Room?
++GAME( 1991, tstrikea,     tstrike,  tstrikecut,  tstrike,  darktowr_state, init_darktowr,    ROT0, "The Game Room",           "Thunder Strike (set 2, older)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, ddungeon,     0,        darktowr,    ddungeon, darktowr_state, init_darktowr,    ROT0, "The Game Room",           "Dangerous Dungeons (set 1)",    MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, ddungeone,    ddungeon, darktowr,    ddungeon, darktowr_state, init_darktowr,    ROT0, "East Coast Coin Company", "Dangerous Dungeons (set 2)",    MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, darktowr,     0,        darktowr,    darktowr, darktowr_state, init_darktowr,    ROT0, "The Game Room",           "Dark Tower",                    MACHINE_SUPPORTS_SAVE )
+diff -Nru src/mame/drivers/dec8.cpp src-fx/mame/drivers/dec8.cpp
+--- src/mame/drivers/dec8.cpp	Wed Jan 30 04:54:23 2019
++++ src-fx/mame/drivers/dec8.cpp	Sat Feb  2 20:47:40 2019
+@@ -2139,7 +2139,7 @@
+ //  m_screen->set_refresh_hz(58);
+ //  m_screen->set_vblank_time(ATTOSECONDS_IN_USEC(529) /* 58Hz, 529us Vblank duration */);
+ //  m_screen->set_size(32*8, 32*8);
+-//  m_screen->set_visarea(0*8, 32*8-1, 1*8, 31*8-1);
++	m_screen->set_visarea(1*8, 31*8-1, 1*8, 31*8-1);
+ 	set_screen_raw_params_data_east(config);
+ 	m_screen->set_screen_update(FUNC(dec8_state::screen_update_garyoret));
+ 	m_screen->screen_vblank().set(FUNC(dec8_state::screen_vblank_dec8));
+diff -Nru src/mame/drivers/exprraid.cpp src-fx/mame/drivers/exprraid.cpp
+--- src/mame/drivers/exprraid.cpp	Wed Jan 30 04:54:23 2019
++++ src-fx/mame/drivers/exprraid.cpp	Sat Feb  2 20:48:20 2019
+@@ -509,7 +509,7 @@
+ //  screen.set_vblank_time(ATTOSECONDS_IN_USEC(2500)); /* not accurate */
+ //  screen.set_size(32*8, 32*8);
+ //  screen.set_visarea(0*8, 32*8-1, 1*8, 31*8-1);
+-	screen.set_raw(XTAL(12'000'000)/2, 384, 0, 256, 262, 8, 256-8); /* not accurate */
++	screen.set_raw(XTAL(12'000'000)/2, 384, 8, 248, 262, 8, 256-8); /* not accurate */
+ 	screen.set_screen_update(FUNC(exprraid_state::screen_update_exprraid));
+ 	screen.set_palette(m_palette);
+ 
+diff -Nru src/mame/drivers/exzisus.cpp src-fx/mame/drivers/exzisus.cpp
+--- src/mame/drivers/exzisus.cpp	Wed Jan 30 04:54:23 2019
++++ src-fx/mame/drivers/exzisus.cpp	Sat Feb  2 20:48:49 2019
+@@ -254,7 +254,7 @@
+ 	MCFG_SCREEN_REFRESH_RATE(60)
+ 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
+ 	MCFG_SCREEN_SIZE(32*8, 32*8)
+-	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
++	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 2*8, 30*8-1)
+ 	MCFG_SCREEN_UPDATE_DRIVER(exzisus_state, screen_update)
+ 	MCFG_SCREEN_PALETTE(m_palette)
+ 
+diff -Nru src/mame/drivers/gberet.cpp src-fx/mame/drivers/gberet.cpp
+--- src/mame/drivers/gberet.cpp	Wed Jan 30 04:54:24 2019
++++ src-fx/mame/drivers/gberet.cpp	Sat Feb  2 21:01:19 2019
+@@ -421,10 +421,7 @@
+ 
+ 	/* video hardware */
+ 	MCFG_SCREEN_ADD("screen", RASTER)
+-	MCFG_SCREEN_REFRESH_RATE(60.60)
+-	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
+-	MCFG_SCREEN_SIZE(32*8, 32*8)
+-	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 2*8, 30*8-1)
++	MCFG_SCREEN_RAW_PARAMS(XTAL(18'432'000)/3, 396, 8, 248, 256, 16, 240) // measured 60.60
+ 	MCFG_SCREEN_UPDATE_DRIVER(gberet_state, screen_update_gberet)
+ 	MCFG_SCREEN_PALETTE(m_palette)
+ 
+diff -Nru src/mame/drivers/jailbrek.cpp src-fx/mame/drivers/jailbrek.cpp
+--- src/mame/drivers/jailbrek.cpp	Wed Jan 30 04:54:25 2019
++++ src-fx/mame/drivers/jailbrek.cpp	Sat Feb  2 21:01:35 2019
+@@ -266,7 +266,7 @@
+ 	/* basic machine hardware */
+ 	MCFG_DEVICE_ADD("maincpu", KONAMI1, MASTER_CLOCK/12)
+ 	MCFG_DEVICE_PROGRAM_MAP(jailbrek_map)
+-	MCFG_DEVICE_PERIODIC_INT_DRIVER(jailbrek_state, interrupt_nmi,  500) /* ? */
++	MCFG_DEVICE_PERIODIC_INT_DRIVER(jailbrek_state, interrupt_nmi,  480) /* ? */ //MAMEFX
+ 
+ 	WATCHDOG_TIMER(config, "watchdog");
+ 
+diff -Nru src/mame/drivers/liberate.cpp src-fx/mame/drivers/liberate.cpp
+--- src/mame/drivers/liberate.cpp	Wed Jan 30 04:54:26 2019
++++ src-fx/mame/drivers/liberate.cpp	Sat Feb  2 20:51:35 2019
+@@ -786,6 +786,9 @@
+ 	liberate_base(config);
+ 	MCFG_DEVICE_MODIFY("maincpu")
+ 	MCFG_DEVICE_OPCODES_MAP(decrypted_opcodes_map)
++	MCFG_SCREEN_MODIFY("screen")
++	MCFG_SCREEN_VISIBLE_AREA(2*8, 31*8-1, 2*8, 30*8-1)
++	MCFG_VIDEO_START_OVERRIDE(liberate_state,liberate)
+ MACHINE_CONFIG_END
+ 
+ MACHINE_CONFIG_START(liberate_state::liberatb)
+diff -Nru src/mame/drivers/m72.cpp src-fx/mame/drivers/m72.cpp
+--- src/mame/drivers/m72.cpp	Wed Jan 30 04:54:26 2019
++++ src-fx/mame/drivers/m72.cpp	Sat Feb  2 20:52:38 2019
+@@ -1820,7 +1820,7 @@
+ 	ymsnd.irq_handler().set("soundirq", FUNC(rst_neg_buffer_device::rst28_w));
+ 	ymsnd.add_route(ALL_OUTPUTS, "speaker", 1.0);
+ 
+-	DAC_8BIT_R2R(config, "dac", 0).add_route(ALL_OUTPUTS, "speaker", 0.2); // unknown DAC
++	DAC_8BIT_R2R(config, "dac", 0).add_route(ALL_OUTPUTS, "speaker", 0.4); // unknown DAC
+ 	voltage_regulator_device &vref(VOLTAGE_REGULATOR(config, "vref", 0));
+ 	vref.set_output(5.0);
+ 	vref.add_route(0, "dac", 1.0, DAC_VREF_POS_INPUT);
+@@ -1945,7 +1945,7 @@
+ MACHINE_CONFIG_END
+ 
+ MACHINE_CONFIG_START(m72_state::m81_dbreed)
+-	m81_xmultipl(config);
++	m81_hharry(config);
+ 	MCFG_DEVICE_MODIFY("maincpu")
+ 	MCFG_DEVICE_PROGRAM_MAP(dbreed_map)
+ MACHINE_CONFIG_END
+diff -Nru src/mame/drivers/megasys1.cpp src-fx/mame/drivers/megasys1.cpp
+--- src/mame/drivers/megasys1.cpp	Wed Jan 30 04:54:26 2019
++++ src-fx/mame/drivers/megasys1.cpp	Sat Feb  2 20:53:30 2019
+@@ -182,10 +182,10 @@
+ 	// soldam: irq 1 & 3 RTE, irq 2 valid
+ 
+ 	if(scanline == 240) // vblank-out irq
+-		m_maincpu->set_input_line(2, HOLD_LINE);
+-
+-	if(scanline == 16)
+ 		m_maincpu->set_input_line(1, HOLD_LINE);
++
++	if(scanline == 0)
++		m_maincpu->set_input_line(2, HOLD_LINE);
+ 
+ 	if(scanline == 128)
+ 		m_maincpu->set_input_line(3, HOLD_LINE);
+diff -Nru src/mame/drivers/mystwarr.cpp src-fx/mame/drivers/mystwarr.cpp
+--- src/mame/drivers/mystwarr.cpp	Wed Jan 30 04:54:27 2019
++++ src-fx/mame/drivers/mystwarr.cpp	Sat Feb  2 20:53:47 2019
+@@ -1044,7 +1044,7 @@
+ 	m_maincpu->set_addrmap(AS_PROGRAM, &mystwarr_state::metamrph_map);
+ 	subdevice<timer_device>("scantimer")->set_callback(FUNC(mystwarr_state::metamrph_interrupt));
+ 
+-	m_k053252->set_offsets(24, 15);
++	m_k053252->set_offsets(24, 16+1);  // MAMEFX
+ 
+ 	K053250(config, m_k053250_1, 0, m_palette, m_screen, -7, 0);
+ 
+@@ -1101,6 +1101,8 @@
+ 	m_maincpu->set_vblank_int("screen", FUNC(mystwarr_state::ddd_interrupt));
+ 	config.device_remove("scantimer");
+ 
++	config.device_remove("k053252");        // MAMEFX
++	K053252(config, m_k053252, 16000000/2); // MAMEFX
+ 	m_k053252->set_offsets(40, 16);
+ 
+ 	K054000(config, "k054000", 0);
+diff -Nru src/mame/drivers/namcona1.cpp src-fx/mame/drivers/namcona1.cpp
+--- src/mame/drivers/namcona1.cpp	Wed Jan 30 04:54:27 2019
++++ src-fx/mame/drivers/namcona1.cpp	Sat Feb  2 20:58:15 2019
+@@ -1046,6 +1046,31 @@
+ 	MSM6242(config, "rtc", XTAL(32'768));
+ }
+ 
++void namcona1_state::namcona1cut(machine_config &config)
++{
++	namcona1(config);
++	m_screen->set_visarea(8, 38*8-1-9, 4*8, 32*8-1);
++}
++
++void namcona2_state::namcona2cut(machine_config &config)
++{
++	namcona2(config);
++	m_screen->set_visarea(8, 38*8-1-9, 4*8, 32*8-1);
++}
++
++void namcona1_state::tinklpit(machine_config &config)
++{
++	namcona1(config);
++	m_screen->set_visarea(4, 38*8-1-5, 4*8, 32*8-1);
++}
++
++void namcona1_state::fghtatck(machine_config &config)
++{
++	namcona1(config);
++	m_screen->set_visarea(9, 38*8-1-9, 4*8, 32*8-1);
++}
++
++
+  /* NA-1 Hardware */
+ void namcona1_state::init_bkrtmaq()         { m_gametype = NAMCO_BKRTMAQ; }
+ void namcona1_state::init_cgangpzl()        { m_gametype = NAMCO_CGANGPZL; }
+@@ -1405,25 +1430,25 @@
+ 
+ // NA-1 (C69 MCU)
+ GAME( 1992, bkrtmaq,    0,        namcona1, namcona1_quiz,  namcona1_state, init_bkrtmaq,  ROT0, "Namco", "Bakuretsu Quiz Ma-Q Dai Bouken (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, cgangpzl,   0,        namcona1,  namcona1_joy,  namcona1_state, init_cgangpzl, ROT0, "Namco", "Cosmo Gang the Puzzle (US)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, cgangpzlj,  cgangpzl, namcona1,  namcona1_joy,  namcona1_state, init_cgangpzl, ROT0, "Namco", "Cosmo Gang the Puzzle (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, exvania,    0,        namcona1,  namcona1_joy,  namcona1_state, init_exvania,  ROT0, "Namco", "Exvania (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, exvaniaj,   exvania,  namcona1,  namcona1_joy,  namcona1_state, init_exvania,  ROT0, "Namco", "Exvania (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, fghtatck,   0,        namcona1,  namcona1_joy,  namcona1_state, init_fa,       ROT90,"Namco", "Fighter & Attacker (US)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, fa,         fghtatck, namcona1,  namcona1_joy,  namcona1_state, init_fa,       ROT90,"Namco", "F/A (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, cgangpzl,   0,        namcona1cut,  namcona1_joy,  namcona1_state, init_cgangpzl, ROT0, "Namco", "Cosmo Gang the Puzzle (US)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, cgangpzlj,  cgangpzl, namcona1cut,  namcona1_joy,  namcona1_state, init_cgangpzl, ROT0, "Namco", "Cosmo Gang the Puzzle (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, exvania,    0,        namcona1cut,  namcona1_joy,  namcona1_state, init_exvania,  ROT0, "Namco", "Exvania (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, exvaniaj,   exvania,  namcona1cut,  namcona1_joy,  namcona1_state, init_exvania,  ROT0, "Namco", "Exvania (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, fghtatck,   0,        fghtatck,  namcona1_joy,  namcona1_state, init_fa,       ROT90,"Namco", "Fighter & Attacker (US)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, fa,         fghtatck, fghtatck,  namcona1_joy,  namcona1_state, init_fa,       ROT90,"Namco", "F/A (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ GAME( 1992, swcourt,    0,        namcona1,  namcona1_joy,  namcona1_state, init_swcourt,  ROT0, "Namco", "Super World Court (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ GAME( 1992, swcourtj,   swcourt,  namcona1,  namcona1_joy,  namcona1_state, init_swcourt,  ROT0, "Namco", "Super World Court (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ GAME( 1994, swcourtb,   swcourt,  namcona1,  namcona1_joy,  namcona1_state, init_swcourtb, ROT0, "bootleg (Playmark?)", "Super World Court (World, bootleg)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ GAME( 1993, emeraldaj,  emeralda, namcona1,  namcona1_joy,  namcona1_state, init_emeraldj, ROT0, "Namco", "Emeraldia (Japan Version B)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL ) /* Parent is below on NA-2 Hardware */
+ GAME( 1993, emeraldaja, emeralda, namcona1,  namcona1_joy,  namcona1_state, init_emeraldj, ROT0, "Namco", "Emeraldia (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL ) /* Parent is below on NA-2 Hardware */
+-GAME( 1993, tinklpit,   0,        namcona1,  namcona1_joy,  namcona1_state, init_tinklpit, ROT0, "Namco", "Tinkle Pit (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1993, tinklpit,   0,        tinklpit,  namcona1_joy,  namcona1_state, init_tinklpit, ROT0, "Namco", "Tinkle Pit (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ 
+ // NA-2 (C70 MCU)
+-GAME( 1992, knckhead,   0,        namcona2,  namcona1_joy,  namcona2_state, init_knckhead, ROT0, "Namco", "Knuckle Heads (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, knckheadj,  knckhead, namcona2,  namcona1_joy,  namcona2_state, init_knckhead, ROT0, "Namco", "Knuckle Heads (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1992, knckheadjp, knckhead, namcona2,  namcona1_joy,  namcona2_state, init_knckhead, ROT0, "Namco", "Knuckle Heads (Japan, Prototype?)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, knckhead,   0,        namcona2cut,  namcona1_joy,  namcona2_state, init_knckhead, ROT0, "Namco", "Knuckle Heads (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, knckheadj,  knckhead, namcona2cut,  namcona1_joy,  namcona2_state, init_knckhead, ROT0, "Namco", "Knuckle Heads (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1992, knckheadjp, knckhead, namcona2cut,  namcona1_joy,  namcona2_state, init_knckhead, ROT0, "Namco", "Knuckle Heads (Japan, Prototype?)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ GAME( 1993, emeralda,   0,        namcona2,  namcona1_joy,  namcona2_state, init_emeralda, ROT0, "Namco", "Emeraldia (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1993, numanath,   0,        namcona2,  namcona1_joy,  namcona2_state, init_numanath, ROT0, "Namco", "Numan Athletics (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+-GAME( 1993, numanathj,  numanath, namcona2,  namcona1_joy,  namcona2_state, init_numanath, ROT0, "Namco", "Numan Athletics (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1993, numanath,   0,        namcona2cut,  namcona1_joy,  namcona2_state, init_numanath, ROT0, "Namco", "Numan Athletics (World)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
++GAME( 1993, numanathj,  numanath, namcona2cut,  namcona1_joy,  namcona2_state, init_numanath, ROT0, "Namco", "Numan Athletics (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ GAME( 1993, quiztou,    0,        namcona2,  namcona1_quiz, namcona2_state, init_quiztou,  ROT0, "Namco", "Nettou! Gekitou! Quiztou!! (Japan)", MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+ GAME( 1995, xday2,      0,        xday2,     namcona1_joy,  xday2_namcona2_state, init_xday2, ROT0, "Namco", "X-Day 2 (Japan)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE | MACHINE_NO_COCKTAIL )
+diff -Nru src/mame/drivers/namconb1.cpp src-fx/mame/drivers/namconb1.cpp
+--- src/mame/drivers/namconb1.cpp	Wed Jan 30 04:54:27 2019
++++ src-fx/mame/drivers/namconb1.cpp	Sat Feb  2 20:58:46 2019
+@@ -312,7 +312,7 @@
+ 
+ 	if (scanline == posirq_scanline)
+ 	{
+-		m_screen->update_partial(posirq_scanline);
++		m_screen->update_partial(posirq_scanline - 1); // MAMEFX
+ 
+ 		if (m_pos_irq_level != 0)
+ 			m_maincpu->set_input_line(m_pos_irq_level, ASSERT_LINE);
+diff -Nru src/mame/drivers/nemesis.cpp src-fx/mame/drivers/nemesis.cpp
+--- src/mame/drivers/nemesis.cpp	Wed Jan 30 04:54:27 2019
++++ src-fx/mame/drivers/nemesis.cpp	Sat Feb  2 21:00:00 2019
+@@ -1499,16 +1499,14 @@
+ 	GENERIC_LATCH_8(config, "soundlatch");
+ 
+ 	ay8910_device &ay1(AY8910(config, "ay1", 14318180/8));
+-	ay1.set_flags(AY8910_LEGACY_OUTPUT | AY8910_SINGLE_OUTPUT);
++	ay1.set_flags(AY8910_LEGACY_OUTPUT);      // MAMEFX
+ 	ay1.port_a_read_callback().set(FUNC(nemesis_state::nemesis_portA_r));
+-	ay1.add_route(ALL_OUTPUTS, "filter1", 0.20);
++	ay1.add_route(ALL_OUTPUTS, "mono", 0.20);      // MAMEFX
+ 
+ 	ay8910_device &ay2(AY8910(config, "ay2", 14318180/8));
+ 	ay2.port_a_write_callback().set(m_k005289, FUNC(k005289_device::k005289_control_A_w));
+ 	ay2.port_b_write_callback().set(m_k005289, FUNC(k005289_device::k005289_control_B_w));
+-	ay2.add_route(0, "filter2", 1.00);
+-	ay2.add_route(1, "filter3", 1.00);
+-	ay2.add_route(2, "filter4", 1.00);
++	ay2.add_route(ALL_OUTPUTS, "mono", 1.00);      // MAMEFX
+ 
+ 	FILTER_RC(config, m_filter1);
+ 	m_filter1->add_route(ALL_OUTPUTS, "mono", 1.0);
+@@ -1566,16 +1564,14 @@
+ 	GENERIC_LATCH_8(config, "soundlatch");
+ 
+ 	ay8910_device &ay1(AY8910(config, "ay1", 14318180/8));
+-	ay1.set_flags(AY8910_LEGACY_OUTPUT | AY8910_SINGLE_OUTPUT);
++	ay1.set_flags(AY8910_LEGACY_OUTPUT);      // MAMEFX
+ 	ay1.port_a_read_callback().set(FUNC(nemesis_state::nemesis_portA_r));
+-	ay1.add_route(ALL_OUTPUTS, "filter1", 0.20);
++	ay1.add_route(ALL_OUTPUTS, "mono", 0.20);      // MAMEFX
+ 
+ 	ay8910_device &ay2(AY8910(config, "ay2", 14318180/8));
+ 	ay2.port_a_write_callback().set(m_k005289, FUNC(k005289_device::k005289_control_A_w));
+ 	ay2.port_b_write_callback().set(m_k005289, FUNC(k005289_device::k005289_control_B_w));
+-	ay2.add_route(0, "filter2", 1.00);
+-	ay2.add_route(1, "filter3", 1.00);
+-	ay2.add_route(2, "filter4", 1.00);
++	ay2.add_route(ALL_OUTPUTS, "mono", 1.00);      // MAMEFX
+ 
+ 	FILTER_RC(config, m_filter1);
+ 	m_filter1->add_route(ALL_OUTPUTS, "mono", 1.0);
+diff -Nru src/mame/drivers/neogeo.cpp src-fx/mame/drivers/neogeo.cpp
+--- src/mame/drivers/neogeo.cpp	Wed Jan 30 04:54:27 2019
++++ src-fx/mame/drivers/neogeo.cpp	Sun Feb  3 11:13:52 2019
+@@ -673,6 +673,9 @@
+ 	void jockeygp(machine_config &config);
+ 	void vliner(machine_config &config);
+ 	void sbp(machine_config &config);
++	void neo304h(machine_config &config); //MAMEFX
++	void neo288h(machine_config &config); //MAMEFX
++	void cyberlip(machine_config &config); //MAMEFX
+ 
+ protected:
+ 	virtual void machine_start() override;
+@@ -764,6 +767,7 @@
+ void neogeo_base_state::set_display_position_interrupt_control(uint16_t data)
+ {
+ 	m_display_position_interrupt_control = data;
++	m_sprgen->m_neogeo_raster_hack = m_display_position_interrupt_control;
+ }
+ 
+ 
+@@ -2433,6 +2437,28 @@
+ 	cartslot_fixed(config, "rom");
+ }
+ 
++// MAMEFX start
++void mvs_led_state::neo304h(machine_config &config)
++{
++	mv1_fixed(config);
++	cartslot_fixed(config, "rom");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
++}
++
++void mvs_led_state::neo288h(machine_config &config)
++{
++	mv1_fixed(config);
++	cartslot_fixed(config, "rom");
++	m_screen->set_visarea(46, 334-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
++}
++
++void mvs_led_state::cyberlip(machine_config &config)
++{
++	mv1_fixed(config);
++	cartslot_fixed(config, "rom");
++	m_screen->set_visarea(30, 334-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
++}
++// MAMEFX end
+ // used by fatfury2 & ssideki
+ void mvs_led_state::fatfur2(machine_config &config)
+ {
+@@ -2454,6 +2480,7 @@
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kof97oro");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kog(machine_config &config)
+@@ -2472,30 +2499,35 @@
+ 	config.set_default_layout(layout_irrmaze);
+ 
+ 	cartslot_fixed(config, "rom");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof98(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "rom_kof98");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::mslugx(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "rom_mslugx");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof99(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "sma_kof99");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof99k(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc42_kof99k");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::garou(machine_config &config)
+@@ -2520,6 +2552,7 @@
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "sma_mslug3");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::mslug3a(machine_config &config)
+@@ -2532,30 +2565,36 @@
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc42_mslug3h");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::mslug3b6(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_mslug3b6");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof2000(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "sma_kof2k");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof2000n(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc50_kof2000n");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::zupapa(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc42_zupapa");
++	//m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
++	m_screen->set_visarea(46, 334-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::sengoku3(machine_config &config)
+@@ -2567,169 +2606,197 @@
+ void mvs_led_state::kof2001(machine_config &config)
+ {
+ 	mv1_fixed(config);
+-	cartslot_fixed(config, "cmc50_kof2001");
++	cartslot_fixed(config, "cmc50_kof2001"); 
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::cthd2k3(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_cthd2k3");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::ct2k3sp(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_ct2k3sp");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::ct2k3sa(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_ct2k3sa");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof2002(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "k2k2_kof2k2");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof2002b(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k2b");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf2k2pls(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "k2k2_kf2k2p");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf2k2mp(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k2mp");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf2k2mp2(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k2mp2");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof10th(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf10th");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf10thep(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf10thep");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf2k5uni(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k5uni");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof2k4se(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k4se");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::mslug5(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "pvc_mslug5");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::ms5plus(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_ms5plus");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::svc(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "pvc_svc");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::svcboot(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_svcboot");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::svcplus(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_svcplus");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::svcplusa(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_svcplusa");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::svcsplus(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_svcsplus");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::samsho5(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "k2k2_samsh5");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::samsho5b(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_samsho5b");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof2003(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "pvc_kf2k3");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kof2003h(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "pvc_kf2k3h");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf2k3bl(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k3bl");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf2k3pl(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k3pl");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::kf2k3upl(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_kf2k3upl");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::samsh5sp(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "k2k2_sams5s");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::neogeo_mj(machine_config &config)
+@@ -2752,12 +2819,14 @@
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc42_preisle2");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::nitd(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc42_nitd");
++	//m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::s1945p(machine_config &config)
+@@ -2770,45 +2839,50 @@
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "boot_lans2004");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::pnyaa(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "pcm2_pnyaa");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::popbounc(machine_config &config)
+ {
+ 	mv1_fixed(config);
+-
+ 	NEOGEO_CTRL_EDGE_CONNECTOR(config.replace(), m_edge, neogeo_arc_edge_fixed, "dial", true);
+-
+ 	cartslot_fixed(config, "rom");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::ganryu(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc42_ganryu");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::bangbead(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc42_bangbead");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::mslug4(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "pcm2_mslug4");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::ms4plus(machine_config &config)
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "pcm2_ms4p");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::rotd(machine_config &config)
+@@ -2833,6 +2907,7 @@
+ {
+ 	mv1_fixed(config);
+ 	cartslot_fixed(config, "cmc50_jockeygp");
++	m_screen->set_visarea(38, 342-1, NEOGEO_VBEND, NEOGEO_VBSTART-1);
+ }
+ 
+ void mvs_led_state::vliner(machine_config &config)
+@@ -11675,115 +11750,114 @@
+                                                                                                 NEOGEO ROM-cart:2004/07/15
+ ****************************************************************************/
+ 
+-//    YEAR  NAME        PARENT    MACHINE    INPUT     STATE           INIT  MONITOR
+-// SNK
+-
++/*    YEAR  NAME        PARENT    MACHINE          INPUT   INIT            MONITOR */
++/* SNK */
+ GAME( 1990, nam1975,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "NAM-1975 (NGM-001 ~ NGH-001)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1990, bstars,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Baseball Stars Professional (NGM-002)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, bstarsh,    bstars,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Baseball Stars Professional (NGH-002)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, tpgolf,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Top Player's Golf (NGM-003 ~ NGH-003)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, mahretsu,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Mahjong Kyo Retsuden (NGM-004 ~ NGH-004)", MACHINE_SUPPORTS_SAVE ) // does not support mahjong panel in MVS mode <- it actually works fine???
+-GAME( 1990, ridhero,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Riding Hero (NGM-006 ~ NGH-006)", MACHINE_NODEVICE_LAN | MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, ridheroh,   ridhero,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Riding Hero (set 2)", MACHINE_NODEVICE_LAN | MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, alpham2,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Alpha Mission II / ASO II - Last Guardian (NGM-007 ~ NGH-007)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, alpham2p,   alpham2,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Alpha Mission II / ASO II - Last Guardian (prototype)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, cyberlip,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Cyber-Lip (NGM-010)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, bstarsh,    bstars,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Baseball Stars Professional (NGH-002)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, tpgolf,     neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Top Player's Golf (NGM-003 ~ NGH-003)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, mahretsu,   neogeo,   neogeo_mj, neogeo_mj, mvs_led_state, empty_init, ROT0, "SNK", "Mahjong Kyo Retsuden (NGM-004 ~ NGH-004)", MACHINE_SUPPORTS_SAVE ) // does not support mahjong panel in MVS mode <- it actually works fine???
++GAME( 1990, ridhero,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Riding Hero (NGM-006 ~ NGH-006)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, ridheroh,   ridhero,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Riding Hero (set 2)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, alpham2,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Alpha Mission II / ASO II - Last Guardian (NGM-007 ~ NGH-007)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, alpham2p,   alpham2,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Alpha Mission II / ASO II - Last Guardian (prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, cyberlip,   neogeo,   cyberlip,  neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Cyber-Lip (NGM-010)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1990, superspy,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The Super Spy (NGM-011 ~ NGH-011)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, mutnat,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Mutation Nation (NGM-014 ~ NGH-014)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, kotm,       neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters (set 1)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, kotmh,      kotm,     neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters (set 2)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, mutnat,     neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Mutation Nation (NGM-014 ~ NGH-014)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, kotm,       neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters (set 1)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, kotmh,      kotm,     neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters (set 2)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1991, sengoku,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Sengoku / Sengoku Denshou (NGM-017 ~ NGH-017)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1991, sengokuh,   sengoku,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Sengoku / Sengoku Denshou (NGH-017, US)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, burningf,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (NGM-018 ~ NGH-018)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, burningfh,  burningf, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (NGH-018, US)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, burningfpa, burningf, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (prototype, ver 23.3, 910326)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, burningfp,  burningf, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (prototype, older)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, lbowling,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "League Bowling (NGM-019 ~ NGH-019)", MACHINE_NODEVICE_LAN | MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, gpilots,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Ghost Pilots (NGM-020 ~ NGH-020)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, gpilotsh,   gpilots,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Ghost Pilots (NGH-020, US)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, gpilotsp,   gpilots,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Ghost Pilots (prototype)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, joyjoy,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Puzzled / Joy Joy Kid (NGM-021 ~ NGH-021)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, quizdais,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Quiz Daisousa Sen - The Last Count Down (NGM-023 ~ NGH-023)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, quizdaisk,  quizdais, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Viccom", "Quiz Salibtamjeong - The Last Count Down (Korean localized Quiz Daisousa Sen)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, lresort,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Last Resort", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, lresortp,   lresort,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Last Resort (prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, burningf,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (NGM-018 ~ NGH-018)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, burningfh,  burningf, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (NGH-018, US)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, burningfpa, burningf, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (prototype, ver 23.3, 910326)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, burningfp,  burningf, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Burning Fight (prototype, older)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, lbowling,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "League Bowling (NGM-019 ~ NGH-019)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, gpilots,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Ghost Pilots (NGM-020 ~ NGH-020)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, gpilotsh,   gpilots,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Ghost Pilots (NGH-020, US)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, gpilotsp,   gpilots,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Ghost Pilots (prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, joyjoy,     neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Puzzled / Joy Joy Kid (NGM-021 ~ NGH-021)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, quizdais,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Quiz Daisousa Sen - The Last Count Down (NGM-023 ~ NGH-023)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, quizdaisk,  quizdais, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Quiz Daisousa Sen - The Last Count Down (Korean release)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, lresort,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Last Resort", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, lresortp,   lresort,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Last Resort (prototype)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1991, eightman,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Pallas", "Eight Man (NGM-025 ~ NGH-025)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, legendos,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Legend of Success Joe / Ashita no Joe Densetsu", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, 2020bb,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Pallas", "2020 Super Baseball (set 1)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, 2020bba,    2020bb,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Pallas", "2020 Super Baseball (set 2)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, 2020bbh,    2020bb,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Pallas", "2020 Super Baseball (set 3)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, socbrawl,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Soccer Brawl (NGM-031)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, socbrawlh,  socbrawl, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Soccer Brawl (NGH-031)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, legendos,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Legend of Success Joe / Ashita no Joe Densetsu", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, 2020bb,     neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Pallas", "2020 Super Baseball (set 1)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, 2020bba,    2020bb,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Pallas", "2020 Super Baseball (set 2)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, 2020bbh,    2020bb,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Pallas", "2020 Super Baseball (set 3)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, socbrawl,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Soccer Brawl (NGM-031)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, socbrawlh,  socbrawl, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Soccer Brawl (NGH-031)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1991, fatfury1,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Fatal Fury - King of Fighters / Garou Densetsu - Shukumei no Tatakai (NGM-033 ~ NGH-033)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, roboarmy,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Robo Army", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, roboarma,   roboarmy, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Robo Army (NGM-032 ~ NGH-032)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, fbfrenzy,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Football Frenzy (NGM-034 ~ NGH-034)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, kotm2,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters 2 - The Next Thing (NGM-039 ~ NGH-039)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, kotm2a,     kotm2,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters 2 - The Next Thing (older)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, kotm2p,     kotm2,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters 2 - The Next Thing (prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, roboarmy,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Robo Army", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, roboarma,   roboarmy, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Robo Army (NGM-032 ~ NGH-032)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, fbfrenzy,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Football Frenzy (NGM-034 ~ NGH-034)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, kotm2,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters 2 - The Next Thing (NGM-039 ~ NGH-039)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, kotm2a,     kotm2,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters 2 - The Next Thing (older)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, kotm2p,     kotm2,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "King of the Monsters 2 - The Next Thing (prototype)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1993, sengoku2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Sengoku 2 / Sengoku Denshou 2", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, bstars2,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Baseball Stars 2", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, bstars2,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Baseball Stars 2", MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, quizdai2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Quiz Meitantei Neo & Geo - Quiz Daisousa Sen part 2 (NGM-042 ~ NGH-042)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1993, 3countb,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "3 Count Bout / Fire Suplex (NGM-043 ~ NGH-043)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, aof,        neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting / Ryuuko no Ken (NGM-044 ~ NGH-044)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, aof,        neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting / Ryuuko no Ken (NGM-044 ~ NGH-044)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1993, samsho,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown / Samurai Spirits (NGM-045)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1993, samshoh,    samsho,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown / Samurai Spirits (NGH-045)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, tophuntr,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Top Hunter - Roddy & Cathy (NGM-046)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, tophuntrh,  tophuntr, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Top Hunter - Roddy & Cathy (NGH-046)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, fatfury2,   neogeo,   fatfur2,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Fatal Fury 2 / Garou Densetsu 2 - Arata-naru Tatakai (NGM-047 ~ NGH-047)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, ssideki,    neogeo,   fatfur2,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Super Sidekicks / Tokuten Ou", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, kof94,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '94 (NGM-055 ~ NGH-055)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, aof2,       neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting 2 / Ryuuko no Ken 2 (NGM-056)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, aof2a,      aof2,     neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting 2 / Ryuuko no Ken 2 (NGH-056)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, kof94,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '94 (NGM-055 ~ NGH-055)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, aof2,       neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting 2 / Ryuuko no Ken 2 (NGM-056)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, aof2a,      aof2,     neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting 2 / Ryuuko no Ken 2 (NGH-056)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1993, fatfursp,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Fatal Fury Special / Garou Densetsu Special (NGM-058 ~ NGH-058, set 1)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1993, fatfurspa,  fatfursp, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Fatal Fury Special / Garou Densetsu Special (NGM-058 ~ NGH-058, set 2)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, savagere,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Savage Reign / Fu'un Mokushiroku - Kakutou Sousei", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, savagere,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Savage Reign / Fu'un Mokushiroku - Kakutou Sousei", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, ssideki2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Super Sidekicks 2 - The World Championship / Tokuten Ou 2 - Real Fight Football (NGM-061 ~ NGH-061)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, samsho2,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown II / Shin Samurai Spirits - Haohmaru Jigokuhen (NGM-063 ~ NGH-063)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, samsho2k,   samsho2,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Saulabi Spirits / Jin Saulabi Tu Hon (Korean release of Samurai Shodown II, set 1)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, samsho2ka,  samsho2,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Saulabi Spirits / Jin Saulabi Tu Hon (Korean release of Samurai Shodown II, set 2)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, fatfury3,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Fatal Fury 3 - Road to the Final Victory / Garou Densetsu 3 - Haruka-naru Tatakai (NGM-069 ~ NGH-069)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, ssideki3,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Super Sidekicks 3 - The Next Glory / Tokuten Ou 3 - Eikou e no Michi", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, kof95,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '95 (NGM-084)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, kof95a,     kof95,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '95 (NGM-084, alt board)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, kof95h,     kof95,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '95 (NGH-084)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, samsho3,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown III / Samurai Spirits - Zankurou Musouken (NGM-087)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, samsho3h,   samsho3,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown III / Samurai Spirits - Zankurou Musouken (NGH-087)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, kof95,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '95 (NGM-084)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, kof95a,     kof95,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '95 (NGM-084, alt board)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, kof95h,     kof95,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '95 (NGH-084)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, samsho3,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown III / Samurai Spirits - Zankurou Musouken (NGM-087)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, samsho3h,   samsho3,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown III / Samurai Spirits - Zankurou Musouken (NGH-087)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, fswords,    samsho3,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Fighters Swords (Korean release of Samurai Shodown III)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, rbff1,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury / Real Bout Garou Densetsu (NGM-095 ~ NGH-095)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, rbff1a,     rbff1,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury / Real Bout Garou Densetsu (bug fix revision)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, rbff1k,     rbff1,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury / Real Bout Garou Densetsu (Korean release)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, aof3,       neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting 3 - The Path of the Warrior / Art of Fighting - Ryuuko no Ken Gaiden", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, aof3k,      aof3,     neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting 3 - The Path of the Warrior (Korean release)", MACHINE_SUPPORTS_SAVE ) // no Japanese title / mode
+-GAME( 1996, kof96,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '96 (NGM-214)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, kof96h,     kof96,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '96 (NGH-214)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, aof3k,      aof3,     neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Art of Fighting 3 - The Path of the Warrior (Korean release)", MACHINE_SUPPORTS_SAVE ) // no Japanese title / mode
++GAME( 1996, kof96,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '96 (NGM-214)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, kof96h,     kof96,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '96 (NGH-214)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, ssideki4,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The Ultimate 11 - The SNK Football Championship / Tokuten Ou - Honoo no Libero", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, kizuna,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Kizuna Encounter - Super Tag Battle / Fu'un Super Tag Battle", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, kizuna4p,   kizuna,   kizuna4p,  kizuna4p,  mvs_state,     empty_init, ROT0, "SNK", "Kizuna Encounter - Super Tag Battle 4 Way Battle Version / Fu'un Super Tag Battle Special Version", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, kizuna,     neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Kizuna Encounter - Super Tag Battle / Fu'un Super Tag Battle", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, kizuna4p,   kizuna,   kizuna4p,  kizuna4p,  mvs_led_state, empty_init, ROT0, "SNK", "Kizuna Encounter - Super Tag Battle 4 Way Battle Version / Fu'un Super Tag Battle Special Version", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, samsho4,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Samurai Shodown IV - Amakusa's Revenge / Samurai Spirits - Amakusa Kourin (NGM-222 ~ NGH-222)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, samsho4k,   samsho4,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Pae Wang Jeon Seol / Legend of a Warrior (Korean censored Samurai Shodown IV)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, rbffspec,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury Special / Real Bout Garou Densetsu Special", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, rbffspeck,  rbffspec, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury Special / Real Bout Garou Densetsu Special (Korean release)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, kof97,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '97 (NGM-2320)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, kof97h,     kof97,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '97 (NGH-2320)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, kof97k,     kof97,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '97 (Korean release)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, kof97pls,   kof97,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "The King of Fighters '97 Plus (bootleg)", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, kof97,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '97 (NGM-2320)", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, kof97h,     kof97,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '97 (NGH-2320)", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, kof97k,     kof97,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '97 (Korean release)", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, kof97pls,   kof97,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "The King of Fighters '97 Plus (bootleg)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1997, kof97oro,   kof97,    kof97oro,  neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "The King of Fighters '97 Chongchu Jianghu Plus 2003 (bootleg)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1997, kog,        kof97,    kog,       neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "King of Gladiator (The King of Fighters '97 bootleg)", MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE ) // protected bootleg
+ GAME( 1997, lastblad,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The Last Blade / Bakumatsu Roman - Gekka no Kenshi (NGM-2340)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1997, lastbladh,  lastblad, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The Last Blade / Bakumatsu Roman - Gekka no Kenshi (NGH-2340)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1997, lastsold,   lastblad, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The Last Soldier (Korean release of The Last Blade)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, irrmaze,    neogeo,   irrmaze,   neogeo,    mvs_state,     empty_init, ROT0, "SNK / Saurus", "The Irritating Maze / Ultra Denryu Iraira Bou", MACHINE_SUPPORTS_SAVE )
+-GAME( 1998, rbff2,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury 2 - The Newcomers / Real Bout Garou Densetsu 2 - The Newcomers (NGM-2400)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1998, rbff2h,     rbff2,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury 2 - The Newcomers / Real Bout Garou Densetsu 2 - The Newcomers (NGH-2400)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1998, rbff2k,     rbff2,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury 2 - The Newcomers (Korean release)", MACHINE_SUPPORTS_SAVE ) // no Japanese title / mode
+-GAME( 1998, mslug2,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Metal Slug 2 - Super Vehicle-001/II (NGM-2410 ~ NGH-2410)", MACHINE_SUPPORTS_SAVE )
+-GAME( 2015, mslug2t,    mslug2,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "hack (trap15)", "Metal Slug 2 Turbo (NGM-9410) (hack)", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, irrmaze,    neogeo,   irrmaze,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK / Saurus", "The Irritating Maze / Ultra Denryu Iraira Bou", MACHINE_SUPPORTS_SAVE )
++GAME( 1998, rbff2,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury 2 - The Newcomers / Real Bout Garou Densetsu 2 - The Newcomers (NGM-2400)", MACHINE_SUPPORTS_SAVE )
++GAME( 1998, rbff2h,     rbff2,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury 2 - The Newcomers / Real Bout Garou Densetsu 2 - The Newcomers (NGH-2400)", MACHINE_SUPPORTS_SAVE )
++GAME( 1998, rbff2k,     rbff2,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Real Bout Fatal Fury 2 - The Newcomers (Korean release)", MACHINE_SUPPORTS_SAVE ) // no Japanese title / mode
++GAME( 1998, mslug2,     neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Metal Slug 2 - Super Vehicle-001/II (NGM-2410 ~ NGH-2410)", MACHINE_SUPPORTS_SAVE )
++GAME( 2015, mslug2t,    mslug2,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "hack (trap15)", "Metal Slug 2 Turbo (NGM-9410) (hack)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1998, kof98,      neogeo,   kof98,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '98 - The Slugfest / King of Fighters '98 - Dream Match Never Ends (NGM-2420)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1998, kof98a,     kof98,    kof98,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '98 - The Slugfest / King of Fighters '98 - Dream Match Never Ends (NGM-2420, alt board)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1998, kof98k,     kof98,    kof98,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '98 - The Slugfest / King of Fighters '98 - Dream Match Never Ends (Korean board, set 1)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1998, kof98ka,    kof98,    kof98,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '98 - The Slugfest / King of Fighters '98 - Dream Match Never Ends (Korean board, set 2)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1998, kof98h,     kof98,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '98 - The Slugfest / King of Fighters '98 - Dream Match Never Ends (NGH-2420)", MACHINE_SUPPORTS_SAVE )
++GAME( 1998, kof98h,     kof98,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '98 - The Slugfest / King of Fighters '98 - Dream Match Never Ends (NGH-2420)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1998, lastbld2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The Last Blade 2 / Bakumatsu Roman - Dai Ni Maku Gekka no Kenshi (NGM-2430 ~ NGH-2430)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1998, neocup98,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Neo-Geo Cup '98 - The Road to the Victory", MACHINE_SUPPORTS_SAVE )
+ GAME( 1999, mslugx,     neogeo,   mslugx,    neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Metal Slug X - Super Vehicle-001 (NGM-2500 ~ NGH-2500)", MACHINE_SUPPORTS_SAVE )
+@@ -11792,7 +11866,7 @@
+ GAME( 1999, kof99e,     kof99,    kof99,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '99 - Millennium Battle (earlier)" , MACHINE_SUPPORTS_SAVE ) /* Encrypted Code & GFX */
+ GAME( 1999, kof99k,     kof99,    kof99,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '99 - Millennium Battle (Korean release)" , MACHINE_SUPPORTS_SAVE ) /* Encrypted Code & GFX */
+ GAME( 1999, kof99ka,    kof99,    kof99k,    neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '99 - Millennium Battle (Korean release, non-encrypted program)" , MACHINE_SUPPORTS_SAVE )   /* Encrypted GFX */
+-GAME( 1999, kof99p,     kof99,    neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '99 - Millennium Battle (prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1999, kof99p,     kof99,    neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "The King of Fighters '99 - Millennium Battle (prototype)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1999, garou,      neogeo,   garou,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Garou - Mark of the Wolves (NGM-2530)" , MACHINE_SUPPORTS_SAVE ) /* Encrypted Code & GFX */
+ GAME( 1999, garouh,     garou,    garouh,    neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Garou - Mark of the Wolves (NGM-2530 ~ NGH-2530)" , MACHINE_SUPPORTS_SAVE ) /* Encrypted Code & GFX */
+ GAME( 1999, garouha,    garou,    garou,     neogeo,    mvs_led_state, empty_init, ROT0, "SNK", "Garou - Mark of the Wolves (NGH-2530)" , MACHINE_SUPPORTS_SAVE ) /* Encrypted Code & GFX */
+@@ -11844,150 +11918,150 @@
+ GAME( 2004, samsh5sph,  samsh5sp, samsh5sp,  neogeo,    mvs_led_state, empty_init, ROT0, "Yuki Enterprise / SNK Playmore", "Samurai Shodown V Special / Samurai Spirits Zero Special (NGH-2720, 2nd release, less censored)", MACHINE_SUPPORTS_SAVE )
+ GAME( 2004, samsh5spho, samsh5sp, samsh5sp,  neogeo,    mvs_led_state, empty_init, ROT0, "Yuki Enterprise / SNK Playmore", "Samurai Shodown V Special / Samurai Spirits Zero Special (NGH-2720, 1st release, censored)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Alpha Denshi Co. / ADK (changed name in 1993)
++/* Alpha Denshi Co. / ADK (changed name in 1993) */
+ GAME( 1990, maglord,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Magician Lord (NGM-005)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1990, maglordh,   maglord,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Magician Lord (NGH-005)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, ncombat,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Ninja Combat (NGM-009)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1990, ncombath,   ncombat,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Ninja Combat (NGH-009)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, ncombat,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Ninja Combat (NGM-009)", MACHINE_SUPPORTS_SAVE )
++GAME( 1990, ncombath,   ncombat,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Ninja Combat (NGH-009)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1990, bjourney,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Blue's Journey / Raguy (ALM-001 ~ ALH-001)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1990, bjourneyh,  bjourney, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Blue's Journey / Raguy (ALH-001)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, crsword,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Crossed Swords (ALM-002 ~ ALH-002)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1991, trally,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Thrash Rally (ALM-003 ~ ALH-003)", MACHINE_NODEVICE_LAN | MACHINE_SUPPORTS_SAVE )
+-GAME( 1992, ncommand,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Ninja Commando", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, crsword,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Crossed Swords (ALM-002 ~ ALH-002)", MACHINE_SUPPORTS_SAVE )
++GAME( 1991, trally,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Thrash Rally (ALM-003 ~ ALH-003)", MACHINE_SUPPORTS_SAVE )
++GAME( 1992, ncommand,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "Ninja Commando", MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, wh1,        neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "World Heroes (ALM-005)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, wh1h,       wh1,      neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "World Heroes (ALH-005)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1992, wh1ha,      wh1,      neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Alpha Denshi Co.", "World Heroes (set 3)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1993, wh2,        neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK",              "World Heroes 2 (ALM-006 ~ ALH-006)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1993, wh2h,       wh2,      neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK",              "World Heroes 2 (ALH-006)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, wh2j,       neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "World Heroes 2 Jet (ADM-007 ~ ADH-007)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, aodk,       neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "Aggressors of Dark Kombat / Tsuukai GANGAN Koushinkyoku (ADM-008 ~ ADH-008)", MACHINE_SUPPORTS_SAVE )
++GAME( 1993, wh2,        neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK",              "World Heroes 2 (ALM-006 ~ ALH-006)", MACHINE_SUPPORTS_SAVE )
++GAME( 1993, wh2h,       wh2,      neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK",              "World Heroes 2 (ALH-006)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, wh2j,       neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "World Heroes 2 Jet (ADM-007 ~ ADH-007)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, aodk,       neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "Aggressors of Dark Kombat / Tsuukai GANGAN Koushinkyoku (ADM-008 ~ ADH-008)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, whp,        neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "World Heroes Perfect", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, moshougi,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "Shougi No Tatsujin - Master of Shougi", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, overtop,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK",              "Over Top", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, moshougi,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "Shougi No Tatsujin - Master of Shougi", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, overtop,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK",              "Over Top", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, ninjamas,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "Ninja Master's - Haoh-ninpo-cho", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, twinspri,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "Twinkle Star Sprites", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, zintrckb,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg",          "Zintrick / Oshidashi Zentrix (bootleg of CD version)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, crswd2bl,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg (Razoola)","Crossed Swords 2 (bootleg of CD version)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, twinspri,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "ADK / SNK",        "Twinkle Star Sprites", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, zintrckb,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg",          "Zintrick / Oshidashi Zentrix (bootleg of CD version)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, crswd2bl,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg (Razoola)","Crossed Swords 2 (bootleg of CD version)", MACHINE_SUPPORTS_SAVE )
+ 
+ 
+-// Aicom (was a part of Sammy) / Yumekobo (changed name in 1996)
+-GAME( 1992, viewpoin,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Sammy / Aicom", "Viewpoint", MACHINE_SUPPORTS_SAVE )
++/* Aicom (was a part of Sammy) / Yumekobo (changed name in 1996) */
++GAME( 1992, viewpoin,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Sammy / Aicom", "Viewpoint", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, janshin,    neogeo,   neogeo_mj, neogeo_mj, mvs_led_state, empty_init, ROT0, "Aicom", "Janshin Densetsu - Quest of Jongmaster", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, pulstar,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Aicom", "Pulstar", MACHINE_SUPPORTS_SAVE )
+-GAME( 1998, blazstar,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Yumekobo", "Blazing Star", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, pulstar,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Aicom", "Pulstar", MACHINE_SUPPORTS_SAVE )
++GAME( 1998, blazstar,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Yumekobo", "Blazing Star", MACHINE_SUPPORTS_SAVE )
+ GAME( 1999, preisle2,   neogeo,   preisle2,  neogeo,    mvs_led_state, empty_init, ROT0, "Yumekobo / Saurus", "Prehistoric Isle 2" , MACHINE_SUPPORTS_SAVE ) /* Encrypted GFX */
+ 
+-// Data East Corporation
+-GAME( 1993, spinmast,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Spin Master / Miracle Adventure", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, wjammers,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Windjammers / Flying Power Disc", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, karnovr,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Karnov's Revenge / Fighter's History Dynamite", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, strhoop,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Street Hoop / Street Slam / Dunk Dream (DEM-004 ~ DEH-004)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, ghostlop,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Ghostlop (prototype)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, magdrop2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Magical Drop II", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, magdrop3,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Magical Drop III", MACHINE_SUPPORTS_SAVE )
++/* Data East Corporation */
++GAME( 1993, spinmast,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Spin Master / Miracle Adventure", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, wjammers,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Windjammers / Flying Power Disc", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, karnovr,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Karnov's Revenge / Fighter's History Dynamite", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, strhoop,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Street Hoop / Street Slam / Dunk Dream (DEM-004 ~ DEH-004)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, ghostlop,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Ghostlop (prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, magdrop2,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Magical Drop II", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, magdrop3,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Data East Corporation", "Magical Drop III", MACHINE_SUPPORTS_SAVE )
+ 
+-// Eleven
++/* Eleven */
+ GAME( 2000, nitd,       neogeo,   nitd,      neogeo,    mvs_led_state, empty_init, ROT0, "Eleven / Gavaking", "Nightmare in the Dark" , MACHINE_SUPPORTS_SAVE ) /* Encrypted GFX */
+-GAME( 2001, nitdbl,     nitd,     neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Nightmare in the Dark (bootleg)" , MACHINE_SUPPORTS_SAVE )
++GAME( 2001, nitdbl,     nitd,     neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Nightmare in the Dark (bootleg)" , MACHINE_SUPPORTS_SAVE )
+ 
+-// Face
+-GAME( 1994, gururin,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Face", "Gururin", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, miexchng,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Face", "Money Puzzle Exchanger / Money Idol Exchanger", MACHINE_SUPPORTS_SAVE )
++/* Face */
++GAME( 1994, gururin,    neogeo,   neo288h,   neogeo,    mvs_led_state, empty_init, ROT0, "Face", "Gururin", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, miexchng,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Face", "Money Puzzle Exchanger / Money Idol Exchanger", MACHINE_SUPPORTS_SAVE )
+ GAME( 1997, dragonsh,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Face", "Dragon's Heaven (development board)", MACHINE_IS_INCOMPLETE | MACHINE_NO_SOUND | MACHINE_SUPPORTS_SAVE ) // same ID code as Voltage Fighter Gowkaizer, developed by ex-Technos staff
+ 
+-// Hudson Soft
+-GAME( 1994, panicbom,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Eighting / Hudson", "Panic Bomber", MACHINE_SUPPORTS_SAVE )
++/* Hudson Soft */
++GAME( 1994, panicbom,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Eighting / Hudson", "Panic Bomber", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, kabukikl,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Hudson", "Far East of Eden - Kabuki Klash / Tengai Makyou - Shin Den", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, neobombe,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Hudson", "Neo Bomberman", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, neobombe,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Hudson", "Neo Bomberman", MACHINE_SUPPORTS_SAVE )
+ 
+-// Monolith Corp.
++/* Monolith Corp. */
+ GAME( 1990, minasan,    neogeo,   neogeo_mj, neogeo_mj, mvs_led_state, empty_init, ROT0, "Monolith Corp.", "Minasan no Okagesamadesu! Dai Sugoroku Taikai (MOM-001 ~ MOH-001)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1991, bakatono,   neogeo,   neogeo_mj, neogeo_mj, mvs_led_state, empty_init, ROT0, "Monolith Corp.", "Bakatonosama Mahjong Manyuuki (MOM-002 ~ MOH-002)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Nazca (later acquired by SNK)
+-GAME( 1996, turfmast,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Nazca", "Neo Turf Masters / Big Tournament Golf", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, mslug,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Nazca", "Metal Slug - Super Vehicle-001", MACHINE_SUPPORTS_SAVE )
++/* Nazca (later acquired by SNK) */
++GAME( 1996, turfmast,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Nazca", "Neo Turf Masters / Big Tournament Golf", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, mslug,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Nazca", "Metal Slug - Super Vehicle-001", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995?,mvstemp,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Nazca", "MVS-TEMP 'SubSystem Ver1.4' (Nazca development board)", MACHINE_NOT_WORKING )
+ 
+-// NMK
+-GAME( 1994, zedblade,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "NMK", "Zed Blade / Operation Ragnarok", MACHINE_SUPPORTS_SAVE )
++/* NMK */
++GAME( 1994, zedblade,   neogeo,   neo288h,   neogeo,    mvs_led_state, empty_init, ROT0, "NMK", "Zed Blade / Operation Ragnarok", MACHINE_SUPPORTS_SAVE )
+ 
+-// Psikyo
++/* Psikyo */
+ GAME( 1999, s1945p,     neogeo,   s1945p,    neogeo,    mvs_led_state, empty_init, ROT0, "Psikyo", "Strikers 1945 Plus" , MACHINE_SUPPORTS_SAVE )   /* Encrypted GFX */
+ 
+-// Saurus
+-GAME( 1995, quizkof,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus (SNK license)", "Quiz King of Fighters (SAM-080 ~ SAH-080)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, quizkofk,   quizkof,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus / Viccom (SNK license)", "Quiz King of Fighters (Korea)", MACHINE_SUPPORTS_SAVE )
++/* Saurus */
++GAME( 1995, quizkof,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Quiz King of Fighters (SAM-080 ~ SAH-080)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, quizkofk,   quizkof,  neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Quiz King of Fighters (Korean release)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, stakwin,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Stakes Winner / Stakes Winner - GI Kinzen  Seiha e no Michi", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, stakwindev, stakwin,  neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Stakes Winner / Stakes Winner - GI Kinzen  Seiha e no Michi (early development board)", MACHINE_SUPPORTS_SAVE | MACHINE_NOT_WORKING | MACHINE_IS_INCOMPLETE )
+ GAME( 1996, ragnagrd,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Ragnagard / Shin-Oh-Ken", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, pgoal,      neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Pleasure Goal / Futsal - 5 on 5 Mini Soccer (NGM-219)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, ironclad,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Choutetsu Brikin'ger / Iron Clad (prototype)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, ironclado,  ironclad, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Choutetsu Brikin'ger / Iron Clad (prototype, bootleg)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, pgoal,      neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Pleasure Goal / Futsal - 5 on 5 Mini Soccer (NGM-219)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, ironclad,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Choutetsu Brikin'ger - Iron Clad (prototype)", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, ironclado,  ironclad, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Choutetsu Brikin'ger - Iron Clad (prototype, bootleg)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, stakwin2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Stakes Winner 2", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, shocktro,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Shock Troopers (set 1)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, shocktroa,  shocktro, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Shock Troopers (set 2)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1998, shocktr2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Shock Troopers - 2nd Squad", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, shocktro,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Shock Troopers (set 1)", MACHINE_SUPPORTS_SAVE )
++GAME( 1997, shocktroa,  shocktro, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Shock Troopers (set 2)", MACHINE_SUPPORTS_SAVE )
++GAME( 1998, shocktr2,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Saurus", "Shock Troopers - 2nd Squad", MACHINE_SUPPORTS_SAVE )
+ GAME( 1998, lans2004,   shocktr2, lans2004,  neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Lansquenet 2004 (Shock Troopers - 2nd Squad bootleg)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Sunsoft
+-GAME( 1995, galaxyfg,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Galaxy Fight - Universal Warriors", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, wakuwak7,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Waku Waku 7", MACHINE_SUPPORTS_SAVE )
++/* Sunsoft */
++GAME( 1995, galaxyfg,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Galaxy Fight - Universal Warriors", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, wakuwak7,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Waku Waku 7", MACHINE_SUPPORTS_SAVE )
+ 
+-// Taito
++/* Taito */
+ GAME( 1994, pbobblen,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Taito", "Puzzle Bobble / Bust-A-Move (Neo-Geo, NGM-083)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, pbobblenb,  pbobblen, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Puzzle Bobble / Bust-A-Move (Neo-Geo, bootleg)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1999, pbobbl2n,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Taito (SNK license)", "Puzzle Bobble 2 / Bust-A-Move Again (Neo-Geo)", MACHINE_SUPPORTS_SAVE ) // ported to Neo-Geo by SNK, original version is on Taito F3
+-GAME( 2003, pnyaa,      neogeo,   pnyaa,     neogeo,    mvs_led_state, empty_init, ROT0, "Aiky / Taito", "Pochi and Nyaa (Ver 2.02)", MACHINE_SUPPORTS_SAVE ) // this version does not show the web address on the title screen
++GAME( 1999, pbobbl2n,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Taito (SNK license)", "Puzzle Bobble 2 / Bust-A-Move Again (Neo-Geo)", MACHINE_SUPPORTS_SAVE )
++GAME( 2003, pnyaa,      neogeo,   pnyaa,     neogeo,    mvs_led_state, empty_init, ROT0, "Aiky / Taito", "Pochi and Nyaa (Ver 2.02)", MACHINE_SUPPORTS_SAVE )
+ GAME( 2003, pnyaaa,     pnyaa,    pnyaa,     neogeo,    mvs_led_state, empty_init, ROT0, "Aiky / Taito", "Pochi and Nyaa (Ver 2.00)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Takara
+-GAME( 1995, marukodq,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Takara", "Chibi Marukochan Deluxe Quiz", MACHINE_SUPPORTS_SAVE )
++/* Takara */
++GAME( 1995, marukodq,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Takara", "Chibi Marukochan Deluxe Quiz", MACHINE_SUPPORTS_SAVE )
+ 
+-// Technos Japan
++/* Technos Japan */
+ GAME( 1995, doubledr,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Technos Japan", "Double Dragon (Neo-Geo)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, gowcaizr,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Technos Japan", "Voltage Fighter - Gowcaizer / Choujin Gakuen Gowcaizer", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, sdodgeb,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Technos Japan", "Super Dodge Ball / Kunio no Nekketsu Toukyuu Densetsu", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, gowcaizr,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Technos Japan", "Voltage Fighter - Gowcaizer / Choujin Gakuen Gowcaizer", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, sdodgeb,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Technos Japan", "Super Dodge Ball / Kunio no Nekketsu Toukyuu Densetsu", MACHINE_SUPPORTS_SAVE )
+ 
+-// Tecmo
+-GAME( 1996, twsoc96,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Tecmo", "Tecmo World Soccer '96", MACHINE_SUPPORTS_SAVE )
++/* Tecmo */
++GAME( 1996, twsoc96,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Tecmo", "Tecmo World Soccer '96", MACHINE_SUPPORTS_SAVE )
+ 
+-// Viccom
+-GAME( 1994, fightfev,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Viccom", "Fight Fever / Wang Jung Wang (set 1)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1994, fightfeva,  fightfev, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Viccom", "Fight Fever / Wang Jung Wang (set 2)", MACHINE_SUPPORTS_SAVE )
++/* Viccom */
++GAME( 1994, fightfev,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Viccom", "Fight Fever (set 1)", MACHINE_SUPPORTS_SAVE )
++GAME( 1994, fightfeva,  fightfev, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Viccom", "Fight Fever (set 2)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Video System Co.
++/* Video System Co. */
+ GAME( 1994, pspikes2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Video System Co.", "Power Spikes II (NGM-068)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1994, sonicwi2,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Video System Co.", "Aero Fighters 2 / Sonic Wings 2", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, sonicwi3,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Video System Co.", "Aero Fighters 3 / Sonic Wings 3", MACHINE_SUPPORTS_SAVE )
+ GAME( 1997, popbounc,   neogeo,   popbounc,  neogeo,    mvs_led_state, empty_init, ROT0, "Video System Co.", "Pop 'n Bounce / Gapporin", MACHINE_SUPPORTS_SAVE )
+ GAME( 1995, froman2b,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg",          "Idol Mahjong Final Romance 2 (Neo-Geo, bootleg of CD version)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Visco
+-GAME( 1992, androdun,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Andro Dunos (NGM-049 ~ NGH-049)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1995, puzzledp,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Puzzle De Pon!", MACHINE_SUPPORTS_SAVE ) // game concept licensed from Taito
+-GAME( 1996, neomrdo,    neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Neo Mr. Do!", MACHINE_SUPPORTS_SAVE ) // game concept licensed from Universal
+-GAME( 1995, goalx3,     neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Goal! Goal! Goal!", MACHINE_SUPPORTS_SAVE )
+-GAME( 1996, neodrift,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Neo Drift Out - New Technology", MACHINE_SUPPORTS_SAVE )
++/* Visco */
++GAME( 1992, androdun,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Andro Dunos (NGM-049 ~ NGH-049)", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, puzzledp,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Puzzle De Pon!", MACHINE_SUPPORTS_SAVE ) // game concept licensed from Taito
++GAME( 1996, neomrdo,    neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Neo Mr. Do!", MACHINE_SUPPORTS_SAVE ) // game concept licensed from Universal
++GAME( 1995, goalx3,     neogeo,   neo288h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Goal! Goal! Goal!", MACHINE_SUPPORTS_SAVE )
++GAME( 1996, neodrift,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Neo Drift Out - New Technology", MACHINE_SUPPORTS_SAVE )
+ GAME( 1996, breakers,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Breakers", MACHINE_SUPPORTS_SAVE )
+-GAME( 1997, puzzldpr,   puzzledp, neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Puzzle De Pon! R!", MACHINE_SUPPORTS_SAVE ) // game concept licensed from Taito
++GAME( 1997, puzzldpr,   puzzledp, neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Puzzle De Pon! R!", MACHINE_SUPPORTS_SAVE ) // game concept licensed from Taito
+ GAME( 1998, breakrev,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Breakers Revenge", MACHINE_SUPPORTS_SAVE )
+-GAME( 1998, flipshot,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Battle Flip Shot", MACHINE_SUPPORTS_SAVE )
+-GAME( 1999, ctomaday,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Captain Tomaday", MACHINE_SUPPORTS_SAVE )
++GAME( 1998, flipshot,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Battle Flip Shot", MACHINE_SUPPORTS_SAVE )
++GAME( 1999, ctomaday,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Captain Tomaday", MACHINE_SUPPORTS_SAVE )
+ GAME( 1999, ganryu,     neogeo,   ganryu,    neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Ganryu / Musashi Ganryuki" , MACHINE_SUPPORTS_SAVE ) /* Encrypted GFX */
+ GAME( 2000, bangbead,   neogeo,   bangbead,  neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Bang Bead", MACHINE_SUPPORTS_SAVE )
+-GAME( 2000, b2b,        neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Bang Bang Busters (2010 NCI release)" , MACHINE_SUPPORTS_SAVE )
++GAME( 2000, b2b,        neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Visco", "Bang Bang Busters (2010 NCI release)" , MACHINE_SUPPORTS_SAVE )
+ 
+-// Mega Enterprise
++/* Mega Enterprise */
+ GAME( 2002, mslug4,     neogeo,   mslug4,    neogeo,    mvs_led_state, empty_init, ROT0, "Mega / Playmore", "Metal Slug 4 (NGM-2630)", MACHINE_SUPPORTS_SAVE )
+ GAME( 2002, mslug4h,    mslug4,   mslug4,    neogeo,    mvs_led_state, empty_init, ROT0, "Mega / Playmore", "Metal Slug 4 (NGH-2630)", MACHINE_SUPPORTS_SAVE )
+ GAME( 2002, ms4plus,    mslug4,   ms4plus,   neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Metal Slug 4 Plus (bootleg)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Evoga
++/* Evoga */
+ GAME( 2002, rotd,       neogeo,   rotd,      neogeo,    mvs_led_state, empty_init, ROT0, "Evoga / Playmore", "Rage of the Dragons (NGM-2640?)", MACHINE_SUPPORTS_SAVE )
+ GAME( 2002, rotdh,      rotd,     rotd,      neogeo,    mvs_led_state, empty_init, ROT0, "Evoga / Playmore", "Rage of the Dragons (NGH-2640?)", MACHINE_SUPPORTS_SAVE )
+ 
+-// Atlus
++/* Atlus */
+ GAME( 2002, matrim,     neogeo,   matrim,    neogeo,    mvs_led_state, empty_init, ROT0, "Noise Factory / Atlus", "Matrimelee / Shin Gouketsuji Ichizoku Toukon (NGM-2660 ~ NGH-2660)", MACHINE_SUPPORTS_SAVE )
+ GAME( 2002, matrimbl,   matrim,   matrimbl,  neogeo,    mvs_led_state, empty_init, ROT0, "bootleg", "Matrimelee / Shin Gouketsuji Ichizoku Toukon (bootleg)", MACHINE_SUPPORTS_SAVE )
+ 
+@@ -12009,8 +12083,8 @@
+ // Vektorlogic
+ GAME( 2004, sbp,        neogeo,   sbp,       neogeo,    mvs_led_state, empty_init, ROT0, "Vektorlogic", "Super Bubble Pop", MACHINE_NOT_WORKING )
+ 
+-// NG:DEV.TEAM
+-GAME( 2005, lasthope,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "NG:DEV.TEAM", "Last Hope (bootleg AES to MVS conversion, no coin support)", MACHINE_SUPPORTS_SAVE ) // wasn't actually released on MVS but bootleg carts have been sold, this doesn't accept coins, runs like a console game
++/* NG:DEV.TEAM */
++GAME( 2005, lasthope,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "NG:DEV.TEAM", "Last Hope (bootleg AES to MVS conversion, no coin support)", MACHINE_SUPPORTS_SAVE ) // wasn't actually released on MVS but bootleg carts have been sold, this doesn't accept coins, runs like a console game
+ // Last Hope Pink Bullets (c)2008 - MVS/AES
+ // Fast Striker (c)2010 - MVS/AES
+ // Fast Striker 1.5 (c)2010 - MVS/AES
+diff -Nru src/mame/drivers/nova2001.cpp src-fx/mame/drivers/nova2001.cpp
+--- src/mame/drivers/nova2001.cpp	Wed Jan 30 04:54:28 2019
++++ src-fx/mame/drivers/nova2001.cpp	Sat Feb  2 21:05:31 2019
+@@ -659,7 +659,7 @@
+ 	MCFG_SCREEN_ADD("screen", RASTER)
+ 	MCFG_SCREEN_REFRESH_RATE(60)
+ 	MCFG_SCREEN_SIZE(32*8, 32*8)
+-	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 4*8, 28*8-1)
++	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 4*8, 28*8-1)
+ 	MCFG_SCREEN_UPDATE_DRIVER(nova2001_state, screen_update_nova2001)
+ 	MCFG_SCREEN_PALETTE(m_palette)
+ 
+diff -Nru src/mame/drivers/rockrage.cpp src-fx/mame/drivers/rockrage.cpp
+--- src/mame/drivers/rockrage.cpp	Wed Jan 30 04:54:29 2019
++++ src-fx/mame/drivers/rockrage.cpp	Sat Feb  2 21:06:00 2019
+@@ -264,7 +264,7 @@
+ 	MCFG_SCREEN_REFRESH_RATE(60)
+ 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
+ 	MCFG_SCREEN_SIZE(32*8, 32*8)
+-	MCFG_SCREEN_VISIBLE_AREA(0*8, 32*8-1, 2*8, 30*8-1)
++	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 2*8, 30*8-1)
+ 	MCFG_SCREEN_UPDATE_DRIVER(rockrage_state, screen_update_rockrage)
+ 	MCFG_SCREEN_PALETTE("palette")
+ 	MCFG_SCREEN_VBLANK_CALLBACK(WRITELINE(*this, rockrage_state, vblank_irq))
+diff -Nru src/mame/drivers/scregg.cpp src-fx/mame/drivers/scregg.cpp
+--- src/mame/drivers/scregg.cpp	Wed Jan 30 04:54:30 2019
++++ src-fx/mame/drivers/scregg.cpp	Sat Feb  2 21:06:19 2019
+@@ -281,7 +281,8 @@
+ 
+ 	/* video hardware */
+ 	MCFG_SCREEN_ADD("screen", RASTER)
+-	MCFG_SCREEN_RAW_PARAMS(XTAL(12'000'000)/2, 384, 8, 248, 272, 8, 248)
++	//MCFG_SCREEN_RAW_PARAMS(XTAL(12'000'000)/2, 384, 8, 248, 272, 8, 248)
++	MCFG_SCREEN_RAW_PARAMS(XTAL(12'000'000)/2, 384, 0, 256, 272, 8, 248) // MAMEFX
+ 	MCFG_SCREEN_UPDATE_DRIVER(scregg_state, screen_update_eggs)
+ 	MCFG_SCREEN_PALETTE(m_palette)
+ 
+@@ -309,7 +310,8 @@
+ 
+ 	/* video hardware */
+ 	MCFG_SCREEN_ADD("screen", RASTER)
+-	MCFG_SCREEN_RAW_PARAMS(XTAL(12'000'000)/2, 384, 8, 248, 272, 8, 248)
++	//MCFG_SCREEN_RAW_PARAMS(XTAL(12'000'000)/2, 384, 8, 248, 272, 8, 248)
++	MCFG_SCREEN_RAW_PARAMS(XTAL(12'000'000)/2, 384, 0, 256, 272, 8, 248) // MAMEFX
+ 	MCFG_SCREEN_UPDATE_DRIVER(scregg_state, screen_update_eggs)
+ 	MCFG_SCREEN_PALETTE(m_palette)
+ 
+diff -Nru src/mame/drivers/segas16b.cpp src-fx/mame/drivers/segas16b.cpp
+--- src/mame/drivers/segas16b.cpp	Wed Jan 30 04:54:30 2019
++++ src-fx/mame/drivers/segas16b.cpp	Sat Feb  2 21:11:42 2019
+@@ -3957,6 +3957,23 @@
+ 
+ MACHINE_CONFIG_END
+ 
++MACHINE_CONFIG_START(segas16b_state::aurail)
++	system16b(config);
++	MCFG_SCREEN_MODIFY("screen")
++	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK_25MHz/4, 400, 24, 312, 262, 0, 224)
++MACHINE_CONFIG_END
++
++MACHINE_CONFIG_START(segas16b_state::riotcity)
++	system16b(config);
++	MCFG_SCREEN_MODIFY("screen")
++	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK_25MHz/4, 400, 16, 304, 262, 0, 224)
++MACHINE_CONFIG_END
++
++MACHINE_CONFIG_START(segas16b_state::wb3)
++	system16b_i8751(config);
++	MCFG_SCREEN_MODIFY("screen")
++	MCFG_SCREEN_RAW_PARAMS(MASTER_CLOCK_25MHz/4, 400, 16, 304, 262, 0, 224)
++MACHINE_CONFIG_END
+ 
+ //**************************************************************************
+ //  GAME-SPECIFIC MACHINE DRIVERS
+@@ -9205,7 +9222,7 @@
+ GAME( 1988, altbeast2,  altbeast, system16b_mc8123,      altbeast, segas16b_state, init_altbeas4_5521,      ROT0,   "Sega", "Altered Beast (set 2) (MC-8123B 317-0066)", 0 )
+ GAME( 1988, altbeastj1, altbeast, system16b_fd1094,      altbeast, segas16b_state, init_generic_5521,       ROT0,   "Sega", "Juuouki (set 1, Japan) (FD1094 317-0065)", 0 )
+ 
+-GAME( 1990, aurail,     0,        system16b,             aurail,   segas16b_state, init_generic_5704,       ROT0,   "Sega / Westone", "Aurail (set 3, US) (unprotected)", 0 )
++GAME( 1990, aurail,     0,        aurail,                aurail,   segas16b_state, init_generic_5704,       ROT0,   "Sega / Westone", "Aurail (set 3, US) (unprotected)", 0 )
+ GAME( 1990, aurail1,    aurail,   system16b_fd1089b,     aurail,   segas16b_state, init_generic_5704,       ROT0,   "Sega / Westone", "Aurail (set 2, World) (FD1089B 317-0168)", 0 )
+ GAME( 1990, aurailj,    aurail,   system16b_fd1089a,     aurail,   segas16b_state, init_generic_5704,       ROT0,   "Sega / Westone", "Aurail (set 1, Japan) (FD1089A 317-0167)", 0 )
+ 
+@@ -9258,7 +9275,7 @@
+ GAME( 1988, passshtj,   passsht,  system16b_fd1094,      passshtj, segas16b_state, init_passshtj_5358,      ROT270, "Sega", "Passing Shot (Japan, 4 Players) (FD1094 317-0070)", 0 )
+ GAME( 1988, cencourt,   passsht,  system16b_mc8123,      cencourt, segas16b_state, init_cencourt_5358,      ROT270, "Sega", "Center Court (World, 4 Players, prototype) (MC-8123B)", 0 )
+ 
+-GAME( 1991, riotcity,   0,        system16b,             riotcity, segas16b_state, init_generic_5704,       ROT0,   "Sega / Westone", "Riot City (Japan)", 0 )
++GAME( 1991, riotcity,   0,        riotcity,              riotcity, segas16b_state, init_generic_5704,       ROT0,   "Sega / Westone", "Riot City (Japan)", 0 )
+ 
+ GAME( 1990, ryukyu,     0,        system16b_fd1094,      ryukyu,   segas16b_state, init_generic_5704,       ROT0,   "Success / Sega", "RyuKyu (Japan) (FD1094 317-5023)", 0 )
+ 
+@@ -9290,7 +9307,7 @@
+ 
+ GAME( 1996, ultracin,   0,        system16b_5797,        system16b_generic, segas16b_state, init_generic_5797, ROT0,   "Sega", "Waku Waku Ultraman Racing", 0 )
+ 
+-GAME( 1988, wb3,        0,        system16b_i8751,       wb3,      segas16b_state, init_wb3_5704,            ROT0,   "Sega / Westone", "Wonder Boy III - Monster Lair (set 6, World, System 16B) (8751 317-0098)", 0 )
++GAME( 1988, wb3,        0,        wb3,                   wb3,      segas16b_state, init_wb3_5704,            ROT0,   "Sega / Westone", "Wonder Boy III - Monster Lair (set 6, World, System 16B) (8751 317-0098)", 0 )
+ GAME( 1988, wb34,       wb3,      system16b_fd1094,      wb3,      segas16b_state, init_generic_5704,        ROT0,   "Sega / Westone", "Wonder Boy III - Monster Lair (set 4, Japan, System 16B) (FD1094 317-0087)", 0 )
+ GAME( 1988, wb33,       wb3,      system16b_fd1094,      wb3,      segas16b_state, init_generic_5704,        ROT0,   "Sega / Westone", "Wonder Boy III - Monster Lair (set 3, World, System 16B) (FD1094 317-0089)", 0 )
+ GAME( 1988, wb32,       wb3,      system16b_fd1094,      wb3,      segas16b_state, init_generic_5358,        ROT0,   "Sega / Westone", "Wonder Boy III - Monster Lair (set 2, Japan, System 16B) (FD1094 317-0085)", 0 )
+diff -Nru src/mame/drivers/sidearms.cpp src-fx/mame/drivers/sidearms.cpp
+--- src/mame/drivers/sidearms.cpp	Wed Jan 30 04:54:30 2019
++++ src-fx/mame/drivers/sidearms.cpp	Sat Feb  2 21:13:21 2019
+@@ -633,15 +633,15 @@
+ 
+ 	ym2203_device &ym1(YM2203(config, "ym1", 4000000));
+ 	ym1.irq_handler().set_inputline(m_audiocpu, 0);
+-	ym1.add_route(0, "mono", 0.15);
+-	ym1.add_route(1, "mono", 0.15);
+-	ym1.add_route(2, "mono", 0.15);
++	ym1.add_route(0, "mono", 0.30);
++	ym1.add_route(1, "mono", 0.30);
++	ym1.add_route(2, "mono", 0.30);
+ 	ym1.add_route(3, "mono", 0.25);
+ 
+ 	ym2203_device &ym2(YM2203(config, "ym2", 4000000));
+-	ym2.add_route(0, "mono", 0.15);
+-	ym2.add_route(1, "mono", 0.15);
+-	ym2.add_route(2, "mono", 0.15);
++	ym2.add_route(0, "mono", 0.30);
++	ym2.add_route(1, "mono", 0.30);
++	ym2.add_route(2, "mono", 0.30);
+ 	ym2.add_route(3, "mono", 0.25);
+ }
+ 
+diff -Nru src/mame/drivers/simpsons.cpp src-fx/mame/drivers/simpsons.cpp
+--- src/mame/drivers/simpsons.cpp	Wed Jan 30 04:54:30 2019
++++ src-fx/mame/drivers/simpsons.cpp	Sat Feb  2 21:59:28 2019
+@@ -329,7 +329,7 @@
+ 	m_maincpu->set_vblank_int("screen", FUNC(simpsons_state::simpsons_irq)); /* IRQ triggered by the 052109, FIRQ by the sprite hardware */
+ 	m_maincpu->line().set(FUNC(simpsons_state::banking_callback));
+ 
+-	Z80(config, m_audiocpu, XTAL(3'579'545)); /* verified on pcb */
++	Z80(config, m_audiocpu, XTAL(3'579'545)*2); /* verified on pcb */    // MAMEFX
+ 	m_audiocpu->set_addrmap(AS_PROGRAM, &simpsons_state::z80_map);   /* NMIs are generated by the 053260 */
+ 
+ 	ADDRESS_MAP_BANK(config, "bank0000").set_map(&simpsons_state::bank0000_map).set_options(ENDIANNESS_BIG, 8, 13, 0x1000);
+diff -Nru src/mame/drivers/snk.cpp src-fx/mame/drivers/snk.cpp
+--- src/mame/drivers/snk.cpp	Wed Jan 30 04:54:30 2019
++++ src-fx/mame/drivers/snk.cpp	Sat Feb  2 21:15:56 2019
+@@ -3727,9 +3727,16 @@
+ 	/* visible area is correct. Debug info is shown in the black bars at the sides
+ 	   of the screen when the Debug dip switch is on */
+ 
++	subdevice<screen_device>("screen")->set_visarea(2*8, 34*8-1, 1*8, 28*8-1);
+ 	MCFG_VIDEO_START_OVERRIDE(snk_state,sgladiat)
+ }
+ 
++void snk_state::madcrash(machine_config &config)
++{
++	vangrd2(config);
++	subdevice<screen_device>("screen")->set_visarea(2*8, 34*8-1, 1*8, 28*8-1);
++}
++
+ void snk_state::hal21(machine_config &config)
+ {
+ 	jcross(config);
+@@ -6356,7 +6363,7 @@
+ 
+ GAME( 1983, marvins,   0,        marvins,   marvins,   snk_state, empty_init, ROT270, "SNK",     "Marvin's Maze", 0 )
+ GAME( 1984, vangrd2,   0,        vangrd2,   vangrd2,   snk_state, empty_init, ROT270, "SNK",     "Vanguard II", 0 )
+-GAME( 1984, madcrash,  0,        vangrd2,   madcrash,  snk_state, empty_init, ROT0,   "SNK",     "Mad Crasher", 0 )
++GAME( 1984, madcrash,  0,        madcrash,  madcrash,  snk_state, empty_init, ROT0,   "SNK",     "Mad Crasher", 0 )
+ GAME( 1984, madcrush,  madcrash, madcrush,  madcrash,  snk_state, empty_init, ROT0,   "SNK",     "Mad Crusher (Japan)", 0 )
+ 
+ GAME( 1984, jcross,    0,        jcross,    jcross,    snk_state, empty_init, ROT270, "SNK",     "Jumping Cross (set 1)", 0 )
+diff -Nru src/mame/drivers/sprcros2.cpp src-fx/mame/drivers/sprcros2.cpp
+--- src/mame/drivers/sprcros2.cpp	Wed Jan 30 04:54:30 2019
++++ src-fx/mame/drivers/sprcros2.cpp	Sat Feb  2 21:16:34 2019
+@@ -471,7 +471,7 @@
+ 	/* video hardware */
+ 	MCFG_SCREEN_ADD("screen", RASTER)
+ 	MCFG_SCREEN_UPDATE_DRIVER(sprcros2_state, screen_update)
+-	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 343, 8, 256-8, 262, 16, 240) // TODO: Wrong screen parameters
++	MCFG_SCREEN_RAW_PARAMS(MAIN_CLOCK/2, 343, 16, 256-16, 262, 16, 240) // TODO: Wrong screen parameters
+ 	MCFG_SCREEN_PALETTE("palette")
+ 
+ 	GFXDECODE(config, m_gfxdecode, "palette", gfx_sprcros2);
+diff -Nru src/mame/drivers/ssv.cpp src-fx/mame/drivers/ssv.cpp
+--- src/mame/drivers/ssv.cpp	Wed Jan 30 04:54:31 2019
++++ src-fx/mame/drivers/ssv.cpp	Sat Feb  2 21:58:49 2019
+@@ -2630,7 +2630,7 @@
+ 	NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
+ 
+ 	/* video hardware */
+-	m_screen->set_visarea(0, (0xcd-0x25)*2-1, 0, (0x101-0x13)-1);
++	m_screen->set_visarea(0, (0xcd-0x25)*2-1, 0, (0x101-0x13)-1+2);    // MAMEFX
+ }
+ 
+ void ssv_state::gdfs(machine_config &config)
+@@ -2825,7 +2825,8 @@
+ 	survarts(config);
+ 
+ 	/* video hardware */
+-	m_screen->set_visarea(0, (0xd4-0x2c)*2-1, 0, (0x102 - 0x12)-1);
++	//m_screen->set_visarea(0, (0xd4-0x2c)*2-1, 0, (0x102 - 0x12)-1);    // MAMEFX
++	m_screen->set_visarea(8, 327, 0, 239);            // MAMEFX
+ }
+ 
+ void ssv_state::eaglshot(machine_config &config)
+@@ -2894,7 +2895,8 @@
+ 	WATCHDOG_TIMER(config, "watchdog");
+ 
+ 	/* video hardware */
+-	m_screen->set_visarea(0, (0xcb - 0x22)*2-1, 0, (0xfe - 0x0e)-1);
++	//m_screen->set_visarea(0, (0xcb - 0x22)*2-1, 0, (0xfe - 0x0e)-1);     // MAMEFX
++	m_screen->set_visarea(0, 335, 0, 239);        // MAMEFX
+ }
+ 
+ void ssv_state::twineag2(machine_config &config)
+diff -Nru src/mame/drivers/system1.cpp src-fx/mame/drivers/system1.cpp
+--- src/mame/drivers/system1.cpp	Wed Jan 30 04:54:31 2019
++++ src-fx/mame/drivers/system1.cpp	Sat Feb  2 21:26:22 2019
+@@ -2207,7 +2207,7 @@
+ 	sys1ppi(config);
+ 
+ 	/* video hardware */
+-	m_screen->set_visarea(2*(0*8+8), 2*(32*8-1-8), 0*8, 28*8-1);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 8, 496, 260, 0, 224);
+ }
+ 
+ /* revised board with 128kbit ROMs and a Z80 PIO for outputs */
+@@ -2406,6 +2406,7 @@
+ 	segacrpt_z80_device &z80(SEGA_315_5093(config.replace(), m_maincpu, MASTER_CLOCK));
+ 	encrypted_sys1pio_maps(config);
+ 	z80.set_decrypted_tag(":decrypted_opcodes");
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 0, 512, 260, 0, 224);
+ }
+ 
+ void system1_state::sys1piox_315_5065(machine_config &config)
+@@ -2420,7 +2421,7 @@
+ void system1_state::sys1pios(machine_config &config)
+ {
+ 	sys1pio(config);
+-	m_screen->set_visarea(2*(0*8+8), 2*(32*8-1-8), 0*8, 28*8-1);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 0, 512, 260, 0, 224);
+ }
+ 
+ void system1_state::sys1piosx_315_5099(machine_config &config)
+@@ -2455,6 +2456,42 @@
+ 	z80.set_decrypted_tag(":decrypted_opcodes");
+ }
+ 
++void system1_state::wboy(machine_config &config)
++{
++	sys1piox_315_5177(config);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 32, 480, 260, 0, 224);
++}
++
++void system1_state::brain(machine_config &config)
++{
++	sys1pio(config);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 16, 496, 260, 8, 224);
++}
++
++void system1_state::gardia(machine_config &config)
++{
++	sys1piox_317_0006(config);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 16, 496, 260, 0, 224);
++}
++
++void system1_state::tokisens(machine_config &config)
++{
++	sys2xb(config);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 16, 496, 260, 8, 216);
++}
++
++void system1_state::ufosensi(machine_config &config)
++{
++	sys2rowxb(config);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 16, 496, 260, 8, 216);
++}
++
++void system1_state::swat(machine_config &config)
++{
++	sys1ppix_315_5048(config);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 0, 496, 260, 0, 224);
++}
++
+ /* this describes the additional 8751 MCU when present */
+ void system1_state::mcu(machine_config &config)
+ {
+@@ -2479,6 +2516,7 @@
+ 
+ 	/* basic machine hardware */
+ 	m_maincpu->set_addrmap(AS_PROGRAM, &system1_state::nobo_map);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 16, 496, 260, 0, 224);
+ }
+ 
+ void system1_state::nobm(machine_config &config)
+@@ -2562,6 +2600,7 @@
+ {
+ 	sys2(config);
+ 	mcu(config);
++	m_screen->set_raw(MASTER_CLOCK/2, 640, 16, 496, 260, 0, 224);
+ }
+ 
+ /* system2 with rowscroll */
+@@ -5565,7 +5604,7 @@
+ GAME( 1983, regulusu,   regulus,  sys1ppi,           regulus,   system1_state, init_bank00,       ROT270, "Sega", "Regulus (not encrypted)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1984, mrviking,   0,        sys1ppisx_315_5041,mrviking,  system1_state, init_bank00,       ROT270, "Sega", "Mister Viking (315-5041)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1984, mrvikingj,  mrviking, sys1ppisx_315_5041,mrvikingj, system1_state, init_bank00,       ROT270, "Sega", "Mister Viking (315-5041, Japan)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1984, swat,       0,        sys1ppix_315_5048, swat,      system1_state, init_bank00,       ROT270, "Coreland / Sega", "SWAT (315-5048)", MACHINE_SUPPORTS_SAVE )
++GAME( 1984, swat,       0,        swat,              swat,      system1_state, init_bank00,       ROT270, "Coreland / Sega", "SWAT (315-5048)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1984, flickyo,    flicky,   sys1ppix_315_5051, flicky,    system1_state, init_bank00,       ROT0,   "Sega", "Flicky (64k Version, 315-5051, set 1)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1984, flickys1,   flicky,   sys1ppix_315_5051, flickys1,  system1_state, init_bank00,       ROT0,   "Sega", "Flicky (64k Version, 315-5051, set 2)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1984, flickyup,   flicky,   sys1ppix_315_5051, flicky,    system1_state, init_bank00,       ROT0,   "Sega", "Flicky (64k Version, on Up'n Down boardset)", MACHINE_SUPPORTS_SAVE )
+@@ -5608,7 +5647,7 @@
+ GAME( 1985, myherok,    myhero,   sys1piox_315_5132, myhero,    system1_state, init_myherok,      ROT0,   "Coreland / Sega", "My Hero (Korea)", MACHINE_SUPPORTS_SAVE ) // possible bootleg, has extra encryption
+ GAME( 1985, 4dwarrio,   0,        sys1piox_315_5162, 4dwarrio,  system1_state, init_bank00,       ROT0,   "Coreland / Sega", "4-D Warriors (315-5162)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1986, raflesia,   0,        sys1piox_315_5162, raflesia,  system1_state, init_bank00,       ROT270, "Coreland / Sega", "Rafflesia (315-5162)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1986, wboy,       0,        sys1piox_315_5177, wboy,      system1_state, init_bank00,       ROT0,   "Escape (Sega license)", "Wonder Boy (set 1, 315-5177)", MACHINE_SUPPORTS_SAVE )
++GAME( 1986, wboy,       0,        wboy,              wboy,      system1_state, init_bank00,       ROT0,   "Escape (Sega license)", "Wonder Boy (set 1, 315-5177)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1986, wboyo,      wboy,     sys1piox_315_5135, wboy,      system1_state, init_bank00,       ROT0,   "Escape (Sega license)", "Wonder Boy (set 2, 315-5135)", MACHINE_SUPPORTS_SAVE ) // aka 317-0003
+ GAME( 1986, wboy3,      wboy,     sys1piox_315_5135, wboy3,     system1_state, init_bank00,       ROT0,   "Escape (Sega license)", "Wonder Boy (set 3, 315-5135)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1986, wboy4,      wboy,     sys1piox_315_5162, wboy,      system1_state, init_bank00,       ROT0,   "Escape (Sega license)", "Wonder Boy (315-5162, 4-D Warriors Conversion)", MACHINE_SUPPORTS_SAVE )
+@@ -5619,8 +5658,8 @@
+ 
+ /* PIO-based System 1 with ROM banking */
+ GAME( 1985, hvymetal,   0,        sys1piox_315_5135, hvymetal,  system1_state, init_bank44,       ROT0,   "Sega", "Heavy Metal (315-5135)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1986, gardia,     0,        sys1piox_317_0006, gardia,    system1_state, init_bank44,       ROT270, "Coreland / Sega", "Gardia (317-0006)", MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE)
+-GAME( 1986, brain,      0,        sys1pio,           brain,     system1_state, init_bank44,       ROT0,   "Coreland / Sega", "Brain", MACHINE_SUPPORTS_SAVE )
++GAME( 1986, gardia,     0,        gardia,            gardia,    system1_state, init_bank44,       ROT270, "Coreland / Sega", "Gardia (317-0006)", MACHINE_NO_COCKTAIL | MACHINE_SUPPORTS_SAVE)
++GAME( 1986, brain,      0,        brain,             brain,     system1_state, init_bank44,       ROT0,   "Coreland / Sega", "Brain", MACHINE_SUPPORTS_SAVE )
+ 
+ /* System 2 */
+ GAME( 1985, choplift,   0,        sys2rowm,          choplift,  system1_state, init_choplift,     ROT0,   "Sega (licensed from Dan Gorlin)", "Choplifter (8751 315-5151)", MACHINE_SUPPORTS_SAVE )
+@@ -5632,7 +5671,7 @@
+ GAME( 1986, gardiaj,    gardia,   sys2_317_0006,     gardia,    system1_state, init_bank44,       ROT270, "Coreland / Sega", "Gardia (Japan, 317-0006)", MACHINE_IMPERFECT_GRAPHICS | MACHINE_SUPPORTS_SAVE )
+ GAME( 1986, wboysys2,   wboy,     sys2_315_5177,     wboysys2,  system1_state, init_bank0c,       ROT0,   "Escape (Sega license)", "Wonder Boy (system 2, set 1, 315-5177)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1986, wboysys2a,  wboy,     sys2_315_5176,     wboysys2,  system1_state, init_bank0c,       ROT0,   "Escape (Sega license)", "Wonder Boy (system 2, set 2, 315-5176)", MACHINE_NOT_WORKING | MACHINE_SUPPORTS_SAVE )
+-GAME( 1987, tokisens,   0,        sys2xb,            tokisens,  system1_state, init_tokisens,     ROT90,  "Sega", "Toki no Senshi - Chrono Soldier (MC-8123, 317-0040)", MACHINE_SUPPORTS_SAVE )
++GAME( 1987, tokisens,   0,        tokisens,          tokisens,  system1_state, init_tokisens,     ROT90,  "Sega", "Toki no Senshi - Chrono Soldier (MC-8123, 317-0040)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1987, tokisensa,  tokisens, sys2,              tokisensa, system1_state, init_bank0c,       ROT90,  "Sega", "Toki no Senshi - Chrono Soldier (prototype?)", MACHINE_SUPPORTS_SAVE ) // or bootleg?
+ GAME( 1987, wbml,       0,        sys2xb,            wbml,      system1_state, init_wbml,         ROT0,   "Sega / Westone", "Wonder Boy in Monster Land (Japan New Ver., MC-8123, 317-0043)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1987, wbmljo,     wbml,     sys2xb,            wbml,      system1_state, init_wbml,         ROT0,   "Sega / Westone", "Wonder Boy in Monster Land (Japan Old Ver., MC-8123, 317-0043)", MACHINE_SUPPORTS_SAVE )
+@@ -5646,5 +5685,5 @@
+ GAME( 1987, wbmljod,    wbml,     sys2xboot,         wbml,      system1_state, init_bootsys2d,    ROT0,   "bootleg (mpatou)", "Wonder Boy in Monster Land (decrypted bootleg of Japan Old Ver., MC-8123, 317-0043)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1987, dakkochn,   0,        sys2xb,            dakkochn,  system1_state, init_dakkochn,     ROT0,   "White Board", "DakkoChan House (MC-8123B, 317-5014)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1987, blockgalb,  blockgal, sys2x,             blockgal,  system1_state, init_bootleg,      ROT90,  "bootleg", "Block Gal (bootleg)", MACHINE_SUPPORTS_SAVE )
+-GAME( 1988, ufosensi,   0,        sys2rowxb,         ufosensi,  system1_state, init_wbml,         ROT0,   "Sega", "Ufo Senshi Yohko Chan (MC-8123, 317-0064)", MACHINE_SUPPORTS_SAVE )
++GAME( 1988, ufosensi,   0,        ufosensi,          ufosensi,  system1_state, init_wbml,         ROT0,   "Sega", "Ufo Senshi Yohko Chan (MC-8123, 317-0064)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1988, ufosensib,  ufosensi, sys2rowxboot,      ufosensi,  system1_state, init_bootsys2,     ROT0,   "bootleg", "Ufo Senshi Yohko Chan (bootleg, not encrypted)", MACHINE_SUPPORTS_SAVE )
+diff -Nru src/mame/drivers/taitosj.cpp src-fx/mame/drivers/taitosj.cpp
+--- src/mame/drivers/taitosj.cpp	Wed Jan 30 04:54:31 2019
++++ src-fx/mame/drivers/taitosj.cpp	Sat Feb  2 21:28:19 2019
+@@ -1872,6 +1872,17 @@
+ MACHINE_CONFIG_END
+ 
+ 
++MACHINE_CONFIG_START(taitosj_state::junglek)
++	nomcu(config);
++	MCFG_SCREEN_MODIFY("screen")
++	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 2*8, 30*8-1)
++MACHINE_CONFIG_END
++
++MACHINE_CONFIG_START(taitosj_state::sfposeid)
++	mcu(config);
++	MCFG_SCREEN_MODIFY("screen")
++	MCFG_SCREEN_VISIBLE_AREA(1*8, 31*8-1, 2*8, 30*8-1)
++MACHINE_CONFIG_END
+ 
+ /***************************************************************************
+ 
+@@ -2867,7 +2878,7 @@
+ 
+ GAME( 1981, spaceskr, 0,        nomcu,    spaceskr, taitosj_state, init_taitosj, ROT0,   "Taito Corporation", "Space Seeker", MACHINE_SUPPORTS_SAVE )
+ GAME( 1981, spacecr,  0,        nomcu,    spacecr,  taitosj_state, init_spacecr, ROT90,  "Taito Corporation", "Space Cruiser", MACHINE_SUPPORTS_SAVE )
+-GAME( 1982, junglek,  0,        nomcu,    junglek,  taitosj_state, init_taitosj, ROT180, "Taito Corporation", "Jungle King (Japan)", MACHINE_SUPPORTS_SAVE )
++GAME( 1982, junglek,  0,        junglek,  junglek,  taitosj_state, init_taitosj, ROT180, "Taito Corporation", "Jungle King (Japan)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1982, junglekas,junglek,  nomcu,    junglek,  taitosj_state, init_taitosj, ROT180, "Taito Corporation", "Jungle King (alternate sound)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1982, junglekj2,junglek,  nomcu,    junglek,  taitosj_state, init_taitosj, ROT180, "Taito Corporation", "Jungle King (Japan, earlier)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1982, jungleh,  junglek,  nomcu,    junglek,  taitosj_state, init_taitosj, ROT180, "Taito America Corporation", "Jungle Hunt (US)", MACHINE_SUPPORTS_SAVE )
+@@ -2887,6 +2898,6 @@
+ GAME( 1983, tinstar2, tinstar,  mcu,      tinstar,  taitosj_state, init_taitosj, ROT0,   "Taito Corporation", "The Tin Star (set 2)", MACHINE_SUPPORTS_SAVE )
+ GAME( 1983, waterski, 0,        nomcu,    waterski, taitosj_state, init_taitosj, ROT270, "Taito Corporation", "Water Ski", MACHINE_SUPPORTS_SAVE )
+ GAME( 1983, bioatack, 0,        nomcu,    bioatack, taitosj_state, init_taitosj, ROT270, "Taito Corporation (Fox Video Games license)", "Bio Attack", MACHINE_SUPPORTS_SAVE )
+-GAME( 1984, sfposeid, 0,        mcu,      sfposeid, taitosj_state, init_taitosj, ROT0,   "Taito Corporation", "Sea Fighter Poseidon", MACHINE_SUPPORTS_SAVE )
++GAME( 1984, sfposeid, 0,        sfposeid, sfposeid, taitosj_state, init_taitosj, ROT0,   "Taito Corporation", "Sea Fighter Poseidon", MACHINE_SUPPORTS_SAVE )
+ GAME( 1983, hwrace,   0,        nomcu,    hwrace,   taitosj_state, init_taitosj, ROT270, "Taito Corporation", "High Way Race", MACHINE_SUPPORTS_SAVE )
+ GAME( 1984, kikstart, 0,        kikstart, kikstart, taitosj_state, init_taitosj, ROT0,   "Taito Corporation", "Kick Start - Wheelie King", MACHINE_SUPPORTS_SAVE )
+diff -Nru src/mame/drivers/thunderx.cpp src-fx/mame/drivers/thunderx.cpp
+--- src/mame/drivers/thunderx.cpp	Wed Jan 30 04:54:31 2019
++++ src-fx/mame/drivers/thunderx.cpp	Sat Feb  2 21:31:06 2019
+@@ -644,7 +644,7 @@
+ 	m_maincpu->set_addrmap(AS_PROGRAM, &thunderx_state::scontra_map);
+ 	m_maincpu->set_vblank_int("screen", FUNC(thunderx_state::vblank_interrupt));
+ 
+-	Z80(config, m_audiocpu, XTAL(3'579'545)); /* verified on pcb */
++	Z80(config, m_audiocpu, XTAL(3'579'545)*2); /* verified on pcb */
+ 	m_audiocpu->set_addrmap(AS_PROGRAM, &thunderx_state::scontra_sound_map);
+ 
+ 	ADDRESS_MAP_BANK(config, m_bank5800).set_map(&thunderx_state::scontra_bank5800_map).set_options(ENDIANNESS_BIG, 8, 12, 0x800);
+@@ -656,7 +656,7 @@
+ 	screen.set_refresh_hz(59.17); /* verified on pcb */
+ 	screen.set_vblank_time(ATTOSECONDS_IN_USEC(0));
+ 	screen.set_size(64*8, 32*8);
+-	screen.set_visarea(12*8, (64-12)*8-1, 2*8, 30*8-1); /* verified on scontra and thunderx PCBs */
++	screen.set_visarea(13*8, (64-13)*8-1, 2*8, 30*8-1); /* verified on scontra and thunderx PCBs */
+ 	screen.set_screen_update(FUNC(thunderx_state::screen_update));
+ 	screen.set_palette(m_palette);
+ 
+@@ -701,11 +701,14 @@
+ 	m_maincpu->set_addrmap(AS_PROGRAM, &thunderx_state::thunderx_map);
+ 	m_maincpu->line().set(FUNC(thunderx_state::banking_callback));
+ 
++	config.device_remove("audiocpu");    // MAMEFX
++	Z80(config, m_audiocpu, XTAL(3'579'545)); /* verified on pcb */    // MAMEFX
+ 	m_audiocpu->set_addrmap(AS_PROGRAM, &thunderx_state::thunderx_sound_map);
+ 
+ 	m_bank5800->set_map(&thunderx_state::thunderx_bank5800_map).set_addr_width(13);
+ 
+ 	config.device_remove("k007232");
++	subdevice<screen_device>("screen")->set_visarea(14*8, (64-14)*8-1, 2*8, 30*8-1 );
+ }
+ 
+ void thunderx_state::gbusters(machine_config &config)
+@@ -718,6 +721,7 @@
+ 	m_maincpu->line().set(FUNC(thunderx_state::banking_callback));
+ 
+ 	m_k052109->set_tile_callback(FUNC(thunderx_state::gbusters_tile_callback), this);
++	subdevice<screen_device>("screen")->set_visarea(14*8, (64-14)*8-1, 2*8, 30*8-1 );
+ }
+ 
+ 
+diff -Nru src/mame/drivers/tmnt.cpp src-fx/mame/drivers/tmnt.cpp
+--- src/mame/drivers/tmnt.cpp	Wed Jan 30 04:54:32 2019
++++ src-fx/mame/drivers/tmnt.cpp	Sat Feb  2 21:32:30 2019
+@@ -2159,7 +2159,7 @@
+ 	screen.set_refresh_hz(60);
+ 	screen.set_vblank_time(ATTOSECONDS_IN_USEC(2500)); /* not accurate */
+ 	screen.set_size(64*8, 32*8);
+-	screen.set_visarea(12*8, (64-12)*8-1, 2*8, 30*8-1);
++	screen.set_visarea(14*8, (64-15)*8-1, 2*8, 30*8-1);
+ 	screen.set_screen_update(FUNC(tmnt_state::screen_update_lgtnfght));
+ 	screen.set_palette(m_palette);
+ 
+@@ -2419,7 +2419,7 @@
+ 	screen.set_refresh_hz(60);
+ 	screen.set_vblank_time(ATTOSECONDS_IN_USEC(2500)); /* not accurate */
+ 	screen.set_size(64*8, 32*8);
+-	screen.set_visarea(13*8, (64-13)*8-1, 2*8, 30*8-1);
++	screen.set_visarea(14*8, (64-14)*8-1, 2*8, 30*8-1);
+ 	screen.set_screen_update(FUNC(tmnt_state::screen_update_tmnt2));
+ 	screen.set_palette(m_palette);
+ 
+diff -Nru src/mame/drivers/vendetta.cpp src-fx/mame/drivers/vendetta.cpp
+--- src/mame/drivers/vendetta.cpp	Wed Jan 30 04:54:32 2019
++++ src-fx/mame/drivers/vendetta.cpp	Sat Feb  2 21:57:55 2019
+@@ -437,7 +437,7 @@
+ 	ADDRESS_MAP_BANK(config, "videobank0").set_map(&vendetta_state::videobank0_map).set_options(ENDIANNESS_BIG, 8, 13, 0x1000);
+ 	ADDRESS_MAP_BANK(config, "videobank1").set_map(&vendetta_state::videobank1_map).set_options(ENDIANNESS_BIG, 8, 13, 0x1000);
+ 
+-	Z80(config, m_audiocpu, XTAL(3'579'545)); /* verified with PCB */
++	Z80(config, m_audiocpu, XTAL(3'579'545)*2); /* verified with PCB */    // MAMEFX
+ 	m_audiocpu->set_addrmap(AS_PROGRAM, &vendetta_state::sound_map); /* interrupts are triggered by the main CPU */
+ 
+ 	EEPROM_ER5911_8BIT(config, "eeprom");
+diff -Nru src/mame/drivers/xain.cpp src-fx/mame/drivers/xain.cpp
+--- src/mame/drivers/xain.cpp	Wed Jan 30 04:54:33 2019
++++ src-fx/mame/drivers/xain.cpp	Sat Feb  2 21:33:34 2019
+@@ -490,7 +490,7 @@
+ 
+ 	// video hardware
+ 	MCFG_SCREEN_ADD(m_screen, RASTER)
+-	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, 384, 0, 256, 272, 8, 248)   // based on ddragon driver
++	MCFG_SCREEN_RAW_PARAMS(PIXEL_CLOCK, 384, 8, 248, 272, 16, 240)   // based on ddragon driver
+ 	MCFG_SCREEN_UPDATE_DRIVER(xain_state, screen_update)
+ 	MCFG_SCREEN_PALETTE(m_palette)
+ 
+diff -Nru src/mame/drivers/xmen.cpp src-fx/mame/drivers/xmen.cpp
+--- src/mame/drivers/xmen.cpp	Wed Jan 30 04:54:33 2019
++++ src-fx/mame/drivers/xmen.cpp	Sat Feb  2 21:57:28 2019
+@@ -317,7 +317,7 @@
+ 	MCFG_SCREEN_REFRESH_RATE(59.17)   /* verified on pcb */
+ 	MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(0))
+ 	MCFG_SCREEN_SIZE(64*8, 32*8)
+-	MCFG_SCREEN_VISIBLE_AREA(13*8, (64-13)*8-1, 2*8, 30*8-1 )   /* correct, same issue of TMNT2 */
++	MCFG_SCREEN_VISIBLE_AREA(14*8, (64-14)*8-1, 2*8, 30*8-1 )   /* correct, same issue of TMNT2 */
+ 	MCFG_SCREEN_UPDATE_DRIVER(xmen_state, screen_update_xmen)
+ 	MCFG_SCREEN_PALETTE("palette")
+ 
+diff -Nru src/mame/includes/ddragon.h src-fx/mame/includes/ddragon.h
+--- src/mame/includes/ddragon.h	Wed Jan 30 04:54:34 2019
++++ src-fx/mame/includes/ddragon.h	Sat Feb  2 21:35:24 2019
+@@ -45,6 +45,7 @@
+ 	}
+ 
+ 	void ddragon(machine_config &config);
++	void ddragoncut(machine_config &config);
+ 	void ddragon6809(machine_config &config);
+ 	void ddragonb(machine_config &config);
+ 	void ddragonba(machine_config &config);
+@@ -173,6 +174,7 @@
+ 	}
+ 
+ 	void darktowr(machine_config &config);
++	void tstrikecut(machine_config &config);
+ 
+ 	void init_darktowr();
+ 
+diff -Nru src/mame/includes/namcona1.h src-fx/mame/includes/namcona1.h
+--- src/mame/includes/namcona1.h	Wed Jan 30 04:54:35 2019
++++ src-fx/mame/includes/namcona1.h	Sat Feb  2 21:36:16 2019
+@@ -46,6 +46,9 @@
+ 	void namcona_base(machine_config &config);
+ 	void c69(machine_config &config);
+ 	void namcona1(machine_config &config);
++	void namcona1cut(machine_config &config);
++	void tinklpit(machine_config &config);
++	void fghtatck(machine_config &config);
+ 
+ 	void init_bkrtmaq();
+ 	void init_fa();
+@@ -189,6 +192,7 @@
+ 
+ 	void c70(machine_config &config);
+ 	void namcona2(machine_config &config);
++	void namcona2cut(machine_config &config);
+ 
+ 	void init_knckhead();
+ 	void init_emeralda();
+diff -Nru src/mame/includes/segas16b.h src-fx/mame/includes/segas16b.h
+--- src/mame/includes/segas16b.h	Wed Jan 30 04:54:36 2019
++++ src-fx/mame/includes/segas16b.h	Sat Feb  2 21:36:46 2019
+@@ -89,6 +89,9 @@
+ 	void system16b_fd1094(machine_config &config);
+ 	void fpointbl(machine_config &config);
+ 	void lockonph(machine_config &config);
++	void aurail(machine_config &config);
++	void riotcity(machine_config &config);
++	void wb3(machine_config &config);
+ 
+ 	// ROM board-specific driver init
+ 	void init_generic_5521();
+diff -Nru src/mame/includes/snk.h src-fx/mame/includes/snk.h
+--- src/mame/includes/snk.h	Wed Jan 30 04:54:36 2019
++++ src-fx/mame/includes/snk.h	Sat Feb  2 21:37:10 2019
+@@ -61,6 +61,7 @@
+ 	void ikari(machine_config &config);
+ 	void sgladiat(machine_config &config);
+ 	void madcrush(machine_config &config);
++	void madcrash(machine_config &config);
+ 
+ 	DECLARE_CUSTOM_INPUT_MEMBER(marvins_sound_busy);
+ 	DECLARE_CUSTOM_INPUT_MEMBER(snk_sound_busy);
+diff -Nru src/mame/includes/system1.h src-fx/mame/includes/system1.h
+--- src/mame/includes/system1.h	Wed Jan 30 04:54:37 2019
++++ src-fx/mame/includes/system1.h	Sat Feb  2 21:37:44 2019
+@@ -87,6 +87,12 @@
+ 	void sys1piox_315_5177(machine_config &config);
+ 	void sys1piox_315_5155(machine_config &config);
+ 	void sys2rowxb(machine_config &config);
++	void brain(machine_config &config);
++	void gardia(machine_config &config);
++	void swat(machine_config &config);
++	void tokisens(machine_config &config);
++	void ufosensi(machine_config &config);
++	void wboy(machine_config &config);
+ 
+ 	void init_bank00();
+ 	void init_bank0c();
+diff -Nru src/mame/includes/taitosj.h src-fx/mame/includes/taitosj.h
+--- src/mame/includes/taitosj.h	Wed Jan 30 04:54:37 2019
++++ src-fx/mame/includes/taitosj.h	Sat Feb  2 21:38:28 2019
+@@ -50,6 +50,8 @@
+ 	void mcu(machine_config &config);
+ 	void nomcu(machine_config &config);
+ 	void kikstart(machine_config &config);
++	void junglek(machine_config &config);
++	void sfposeid(machine_config &config);
+ 
+ 	void init_alpinea();
+ 	void init_alpine();
+diff -Nru src/mame/video/cidelsa.cpp src-fx/mame/video/cidelsa.cpp
+--- src/mame/video/cidelsa.cpp	Wed Jan 30 04:54:52 2019
++++ src-fx/mame/video/cidelsa.cpp	Sat Feb  2 22:51:45 2019
+@@ -155,7 +155,7 @@
+ 	SPEAKER(config, "mono").front_center();
+ 	CDP1869(config, m_vis, DESTRYER_CHR2, &cidelsa_state::cidelsa_page_ram);
+ 	screen_device &screen(m_vis->add_pal_screen(config, SCREEN_TAG, DESTRYER_CHR2));
+-	screen.set_default_position(1.226, 0.012, 1.4, 0.044);
++	screen.set_default_position(1.0, 0.0, 1.0, 0.0);
+ 	m_vis->set_pcb_read_callback(FUNC(cidelsa_state::cidelsa_pcb_r));
+ 	m_vis->set_char_ram_read_callback(FUNC(cidelsa_state::cidelsa_charram_r));
+ 	m_vis->set_char_ram_write_callback(FUNC(cidelsa_state::cidelsa_charram_w));
+@@ -169,7 +169,7 @@
+ 	SPEAKER(config, "mono").front_center();
+ 	CDP1869(config, m_vis, ALTAIR_CHR2, &cidelsa_state::cidelsa_page_ram);
+ 	screen_device &screen(m_vis->add_pal_screen(config, SCREEN_TAG, ALTAIR_CHR2));
+-	screen.set_default_position(1.226, 0.012, 1.4, 0.044);
++	screen.set_default_position(1.0, 0.0, 1.0, 0.0);
+ 	m_vis->set_pcb_read_callback(FUNC(cidelsa_state::cidelsa_pcb_r));
+ 	m_vis->set_char_ram_read_callback(FUNC(cidelsa_state::cidelsa_charram_r));
+ 	m_vis->set_char_ram_write_callback(FUNC(cidelsa_state::cidelsa_charram_w));
+@@ -183,7 +183,7 @@
+ 	SPEAKER(config, "mono").front_center();
+ 	CDP1869(config, m_vis, DRACO_CHR2, &draco_state::draco_page_ram);
+ 	screen_device &screen(m_vis->add_pal_screen(config, SCREEN_TAG, DRACO_CHR2));
+-	screen.set_default_position(1.226, 0.012, 1.360, 0.024);
++	screen.set_default_position(1.0, 0.0, 1.0, 0.0);
+ 	m_vis->set_pcb_read_callback(FUNC(draco_state::draco_pcb_r));
+ 	m_vis->set_char_ram_read_callback(FUNC(draco_state::draco_charram_r));
+ 	m_vis->set_char_ram_write_callback(FUNC(draco_state::draco_charram_w));
+diff -Nru src/mame/video/mystwarr.cpp src-fx/mame/video/mystwarr.cpp
+--- src/mame/video/mystwarr.cpp	Wed Jan 30 04:54:54 2019
++++ src-fx/mame/video/mystwarr.cpp	Sat Feb  2 21:54:17 2019
+@@ -228,10 +228,10 @@
+ 	konamigx_mixer_init(*m_screen, 0);
+ 
+ 	// other reference, floor at first boss
+-	m_k056832->set_layer_offs(0, -2+4, 0); // text
+-	m_k056832->set_layer_offs(1,  0+4, 0); // attract sea
+-	m_k056832->set_layer_offs(2,  2+4, 0); // attract red monster in background of sea
+-	m_k056832->set_layer_offs(3,  3+4, 0); // attract sky background to sea
++	m_k056832->set_layer_offs(0, -2+4, +2); // text
++	m_k056832->set_layer_offs(1,  0+4, +2); // attract sea
++	m_k056832->set_layer_offs(2,  2+4, +2); // attract red monster in background of sea
++	m_k056832->set_layer_offs(3,  3+4, +2); // attract sky background to sea
+ }
+ 
+ VIDEO_START_MEMBER(mystwarr_state, viostorm)
+diff -Nru src/mame/video/namconb1.cpp src-fx/mame/video/namconb1.cpp
+--- src/mame/video/namconb1.cpp	Wed Jan 30 04:54:54 2019
++++ src-fx/mame/video/namconb1.cpp	Sat Feb  2 21:53:54 2019
+@@ -85,6 +85,7 @@
+ 
+ void namconb1_state::video_update_common(screen_device &screen, bitmap_ind16 &bitmap, const rectangle &cliprect, int bROZ )
+ {
++	const rectangle &visarea_sprites = m_screen->visible_area();
+ 	int pri;
+ 
+ 	if( bROZ )
+@@ -103,8 +104,26 @@
+ 	{
+ 		for( pri=0; pri<8; pri++ )
+ 		{
+-			m_c123tmap->draw( screen, bitmap, cliprect, pri );
+-			m_c355spr->draw(screen, bitmap, cliprect, pri );
++// MAMEFX start
++			if (m_pos_irq_level != 0 && pri >= 5) // raster interrupt enabled
++			{
++				if (pri == 5)
++					m_c123tmap->draw( screen, bitmap, cliprect, pri );
++				if (cliprect.max_y == visarea_sprites.max_y) // no raster on sprites?? faster!
++				{
++					if (pri != 5)
++						m_c123tmap->draw( screen, bitmap, visarea_sprites, pri );
++					m_c355spr->draw(screen, bitmap, visarea_sprites, pri );
++				}
++			}
++			else
++			{
++				m_c123tmap->draw( screen, bitmap, cliprect, pri );
++				m_c355spr->draw(screen, bitmap, cliprect, pri );
++			}
++//			m_c123tmap->draw( screen, bitmap, cliprect, pri );
++//			m_c355spr->draw(screen, bitmap, cliprect, pri );
++// MAMEFX end
+ 		}
+ 	}
+ } /* video_update_common */
+diff -Nru src/mame/video/nemesis.cpp src-fx/mame/video/nemesis.cpp
+--- src/mame/video/nemesis.cpp	Wed Jan 30 04:54:54 2019
++++ src-fx/mame/video/nemesis.cpp	Sat Feb  2 21:53:33 2019
+@@ -164,9 +164,9 @@
+ 	{
+ 		RES_NET_VCC_5V | RES_NET_VBIAS_5V | RES_NET_VIN_OPEN_COL,
+ 		{
+-			{ RES_NET_AMP_EMITTER, 1000, 0, 5, { 4700, 2400, 1200, 620, 300 } },
+-			{ RES_NET_AMP_EMITTER, 1000, 0, 5, { 4700, 2400, 1200, 620, 300 } },
+-			{ RES_NET_AMP_EMITTER, 1000, 0, 5, { 4700, 2400, 1200, 620, 300 } }
++			{ RES_NET_AMP_EMITTER, 1000, 470, 5, { 4700, 2400, 1200, 620, 300 } },
++			{ RES_NET_AMP_EMITTER, 1000, 470, 5, { 4700, 2400, 1200, 620, 300 } },
++			{ RES_NET_AMP_EMITTER, 1000, 470, 5, { 4700, 2400, 1200, 620, 300 } }
+ 		}
+ 	};
+ 
+diff -Nru src/mame/video/neogeo.cpp src-fx/mame/video/neogeo.cpp
+--- src/mame/video/neogeo.cpp	Wed Jan 30 04:54:54 2019
++++ src-fx/mame/video/neogeo.cpp	Sat Feb  2 21:53:02 2019
+@@ -161,9 +161,12 @@
+ 	// fill with background color first
+ 	bitmap.fill(*m_bg_pen, cliprect);
+ 
+-	m_sprgen->draw_sprites(bitmap, cliprect.min_y);
+-
+-	m_sprgen->draw_fixed_layer(bitmap, cliprect.min_y);
++	for (int line = cliprect.min_y; line <= cliprect.max_y ; line++)
++	{
++		m_sprgen->parse_sprites(line);
++		m_sprgen->draw_sprites(bitmap, line);
++		m_sprgen->draw_fixed_layer(bitmap, line);
++	}
+ 
+ 	return 0;
+ }
+diff -Nru src/mame/video/neogeo_spr.h src-fx/mame/video/neogeo_spr.h
+--- src/mame/video/neogeo_spr.h	Wed Jan 30 04:54:54 2019
++++ src-fx/mame/video/neogeo_spr.h	Sat Feb  2 21:53:14 2019
+@@ -67,6 +67,8 @@
+ 	uint8_t      m_fixed_layer_source;
+ 	uint8_t      m_fixed_layer_bank_type;
+ 
++	uint8_t      m_neogeo_raster_hack;
++
+ 	emu_timer  *m_auto_animation_timer;
+ 	emu_timer  *m_sprite_line_timer;
+ 
+diff -Nru src/mame/video/taito_f3.cpp src-fx/mame/video/taito_f3.cpp
+--- src/mame/video/taito_f3.cpp	Wed Jan 30 04:54:55 2019
++++ src-fx/mame/video/taito_f3.cpp	Sat Feb  2 21:52:17 2019
+@@ -1929,8 +1929,16 @@
+ 		_y_zoom[y] = (line_zoom&0xff) << 9;
+ 
+ 		/* Evaluate clipping */
+-		if (pri&0x0800)
++		/* Notes:
++		   kludge: line-disable breaks quizhuhu text & landmakr "you win / you lose" text. [april 23, 2017 -dink]
++		   somehow I think 0x0800 has nothing to do with line-disable.
++		   although tcobra2 uses this to clip the sides of the playfield
++		*/
++
++		if (pri&0x0800 && m_f3_game != LANDMAKR)
++		{
+ 			line_enable=0;
++		}
+ 		else if (pri&0x0330)
+ 		{
+ 			//fast path todo - remove line enable
+@@ -2075,6 +2083,9 @@
+ 		else
+ 			line_enable=1;
+ 
++		if (m_f3_game == ARABIANM && line_enable) 
++			line_enable = 1; 	// kludge: arabianm missing cutscene text april.21.2017_dink
++
+ 		line_t->pri[y]=pri;
+ 
+ 		/* Evaluate clipping */
+@@ -2346,10 +2357,16 @@
+ 				{
+ 					if(alpha_type==1)
+ 					{
+-						/* if (m_f3_alpha_level_2as==0   && m_f3_alpha_level_2ad==255)
+-						 *     alpha_mode[i]=3; alpha_mode_flag[i] |= 0x80;}
+-						 * will display continue screen in gseeker (mt 00026) */
+-						if     (m_f3_alpha_level_2as==0   && m_f3_alpha_level_2ad==255) alpha_mode[i]=0;
++						if (m_f3_alpha_level_2as==0 && m_f3_alpha_level_2ad==255)
++						{
++							if (m_f3_game == GSEEKER)  /* will display continue screen in gseeker (mt 00026) */
++							{
++								alpha_mode[i]=3; 
++								alpha_mode_flag[i] |= 0x80;
++							}
++							else 
++								alpha_mode[i]=0;
++						}
+ 						else if(m_f3_alpha_level_2as==255 && m_f3_alpha_level_2ad==0  ) alpha_mode[i]=1;
+ 					}
+ 					else if(alpha_type==2)
