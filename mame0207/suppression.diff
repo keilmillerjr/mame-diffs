@@ -1,0 +1,58 @@
+diff -Nru oldsrc/emu/render.cpp src/emu/render.cpp
+--- oldsrc/emu/render.cpp	2019-01-30 15:54:15.000000000 +1100
++++ src/emu/render.cpp	2019-01-31 00:18:50.668606628 +1100
+@@ -1417,7 +1417,8 @@
+ 		}
+ 
+ 	// if we are not in the running stage, draw an outer box
+-	else
++	// DISABLE WHITE BORDER
++	else if ( !m_manager.machine().options().skip_gameinfo() )
+ 	{
+ 		render_primitive *prim = list.alloc(render_primitive::QUAD);
+ 		set_render_bounds_xy(prim->bounds, 0.0f, 0.0f, (float)m_width, (float)m_height);
+diff -Nru oldsrc/frontend/mame/ui/mainmenu.cpp src/frontend/mame/ui/mainmenu.cpp
+--- oldsrc/frontend/mame/ui/mainmenu.cpp	2019-01-30 15:54:15.000000000 +1100
++++ src/frontend/mame/ui/mainmenu.cpp	2019-01-31 12:27:14.571818614 +1100
+@@ -123,6 +123,9 @@
+ 
+ 	item_append(menu_item_type::SEPARATOR);
+ 
++	// DISABLE SELECT NEW MACHINE & FAVORITES
++	if (!machine().options().skip_gameinfo())
++	{
+ 	if (!mame_machine_manager::instance()->favorite().is_favorite(machine()))
+ 		item_append(_("Add To Favorites"), "", 0, (void *)ADD_FAVORITE);
+ 	else
+@@ -133,6 +136,7 @@
+ //  item_append(_("Quit from Machine"), nullptr, 0, (void *)QUIT_GAME);
+ 
+ 	item_append(_("Select New Machine"), "", 0, (void *)SELECT_GAME);
++	}
+ }
+ 
+ menu_main::~menu_main()
+diff -Nru oldsrc/frontend/mame/ui/ui.cpp src/frontend/mame/ui/ui.cpp
+--- oldsrc/frontend/mame/ui/ui.cpp	2019-01-30 15:54:15.000000000 +1100
++++ src/frontend/mame/ui/ui.cpp	2019-01-31 00:18:50.672606670 +1100
+@@ -313,7 +313,8 @@
+ 		switch (state)
+ 		{
+ 		case 0:
+-			if (show_warnings)
++			// DISABLE INTERACTIVE WARNING MESSAGES
++			if (show_gameinfo)
+ 				messagebox_text = machine_info().warnings_string();
+ 			if (!messagebox_text.empty())
+ 			{
+@@ -770,6 +771,10 @@
+ 
+ uint32_t mame_ui_manager::handler_messagebox(render_container &container)
+ {
++	// DISABLE INITIALIZING, LOADING & DECRYPTING MESSAGES
++	if (machine().options().skip_gameinfo())
++		return 0;
++
+ 	draw_text_box(container, messagebox_text.c_str(), ui::text_layout::LEFT, 0.5f, 0.5f, messagebox_backcolor);
+ 	return 0;
+ }
