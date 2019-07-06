@@ -1202,7 +1202,7 @@ diff -Nru src/mame/drivers/neogeo.cpp src-fx/mame/drivers/neogeo.cpp
 -GAME( 1995, galaxyfg,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Galaxy Fight - Universal Warriors", MACHINE_SUPPORTS_SAVE )
 -GAME( 1996, wakuwak7,   neogeo,   neobase,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Waku Waku 7", MACHINE_SUPPORTS_SAVE )
 +/* Sunsoft */
-+GAME( 1995, galaxyfg,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Galaxy Fight - Universal Warriors", MACHINE_SUPPORTS_SAVE )
++GAME( 1995, galaxyfg,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Galaxy Fight - Universal Warriors", MACHINE_SUPPORTS_SAVE )
 +GAME( 1996, wakuwak7,   neogeo,   neo304h,   neogeo,    mvs_led_state, empty_init, ROT0, "Sunsoft", "Waku Waku 7", MACHINE_SUPPORTS_SAVE )
  
 -// Taito
