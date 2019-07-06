@@ -114,19 +114,21 @@ It is not required to install the complete xcode package for the command line de
 
 #### Download
 
+*substitute version number accordingly*
+
 1. Download MAME Source
 	1. ```cd ~/```
-	2. ```curl -O https://github.com/mamedev/mame/archive/mame0211.zip && unzip mame0211.zip```
+	2. ```sudo curl -O -L https://github.com/mamedev/mame/releases/download/mame0211/mame0211s.zip && unzip mame0211s.zip && mame.zip -d mame0211 && rm mame.zip```
 2. Download Patches
 	1. ```cd mame0211```
-	2. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/groovymame_017n.diff```
-	3. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/groovymame_017n.diff```
-	4. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/groovymame_017n.diff```
+	2. ```curl -O https://raw.githubusercontent.com/keilmillerjr/mame-diffs/master/mame0211/groovymame_017n.diff```
+	3. ```curl -O https://raw.githubusercontent.com/keilmillerjr/mame-diffs/master/mame0211/suppression.diff```
+	4. ```curl -O https://raw.githubusercontent.com/keilmillerjr/mame-diffs/master/mame0211/various_fixes.diff```
 
 #### Apply Patches
 
 1. ```cd ~/mame-mame0211```
-2. ```patch -p0 < groovymame_017m.diff```
+2. ```patch -p0 < groovymame_017n.diff```
 3. ```patch -p0 < suppression.diff```
 4. ```patch -p0 < various_fixes.diff```
 
@@ -150,7 +152,7 @@ Linux and mac binaries have groovymame, suppression and various fixes patches ap
 1. ```cd ~/```
 2. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/mame64_linux.zip && unzip mame64_linux.zip```
 
-## Contibuting
+## Contributing
 
 #### Line Returns in Patches
 
