@@ -2,7 +2,9 @@
 
 by [Keil Miller Jr](http://keilmiller.com)
 
-I did not create these patches. I am simply hosting them all together in one easy package, including binaries that I compiled. MAME License is [included](LICENSE.md) in this repository, and can be found [here](https://github.com/mamedev/mame/blob/master/LICENSE.md). It must be included with the binary.
+I did not create these patches. I am simply hosting them all together in one easy package, including binaries that I compiled. Video related patches pertain to Windows. While other patches are operating system agnostic, the guide assumes you are using **arch linux**. Compiling on mac will be very similar
+
+MAME License is [included](LICENSE.md) in this repository, and can be found [here](https://github.com/mamedev/mame/blob/master/LICENSE.md). It must be included with the binary.
 
 ## Patch Descriptions
 
@@ -74,11 +76,11 @@ These modifications are current for the MAME 0.211 patch.
 3. Suppression
 4. Various Fixes
 
-## Applying Patches Using Linux (Arch)
+## Compile
 
 #### Prerequisites
 
-###### Ignore Kernel Update
+###### Ignore Kernel Update (Arch Linux)
 
 We do not want to loose our patched kernel for 15khz.
 
@@ -87,54 +89,116 @@ We do not want to loose our patched kernel for 15khz.
 3. Save the buffer *(ctrl+o)*.
 4. Exit nano *(ctrl+x)*.
 
-###### Update all packages on the system
+###### Update all packages on the system (Arch Linux)
 
 ```sudo pacman -Syu```
+
+###### Install unzip package (Arch Linux, already included on Mac OS X)
+
+```sudo pacman -S unzip```
+
+###### Install Dependancies Required to Compile MAME (Arch Linux)
+
+```sudo pacman -S base-devel git sdl2 gconf sdl2_ttf gcc qt5```
+
+###### Install Dependancies Required to Compile MAME (Mac OS X 10.9+)
+
+It is not required to install the complete xcode package for the command line developer tools.
+
+1. ```xcode-select --install```
+2. A software update popup window will appear that asks: "The xcode-select command requires the command line developer tools. Would you like to install the tools now?". Click "Install", then agree to the Terms of Service when requested.
+3. ```cd ~/```
+4. ```curl -O http://libsdl.org/release/SDL2-2.0.9.dmg && hdiutil attach SDL2-2.0.9.dmg``` *2.0.4+ required, take note of disk name from output*
+5. ```hdiutil detach /dev/disk1s2``` *use disk name from step 4*
+
+
+#### Download
+
+1. Download MAME Source
+	1. ```cd ~/```
+	2. ```curl -O https://github.com/mamedev/mame/archive/mame0211.zip && unzip mame0211.zip```
+2. Download Patches
+	1. ```cd mame0211```
+	2. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/groovymame_017n.diff```
+	3. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/groovymame_017n.diff```
+	4. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/groovymame_017n.diff```
+
+#### Apply Patches
+
+1. ```cd ~/mame-mame0211```
+2. ```patch -p0 < groovymame_017m.diff```
+3. ```patch -p0 < suppression.diff```
+4. ```patch -p0 < various_fixes.diff```
+
+#### Compile MAME
+
+1. ```cd ~/mame-mame0211```
+2. ```make```
+
+## Precompiled Binaries
+
+Linux and mac binaries have groovymame, suppression and various fixes patches applied.
+
+#### Prerequisites
 
 ###### Install unzip package
 
 ```sudo pacman -S unzip```
 
-###### Install Dependancies Requiered to Compile MAME
+#### Download
 
-```sudo pacman -S base-devel git sdl2 gconf sdl2_ttf gcc qt5```
+1. ```cd ~/```
+2. ```curl -O https://github.com/keilmillerjr/mame-diffs/blob/master/mame0211/mame64_linux.zip && unzip mame64_linux.zip```
 
-#### Create New Directory
+## Contibuting
 
-1. ```cd ~```
-2. ```mkdir dev```
+#### Line Returns in Patches
 
-#### Download & Unzip MAME Source and Patches
-
-1. ```cd ~/dev```
-2. ```curl -O https://github.com/mamedev/mame/archive/mame0211.zip && unzip mame0211.zip```
-3. ```curl -o mame-diffs.zip https://github.com/keilmillerjr/mame-diffs/archive/master.zip && unzip mame-diffs.zip```
-
-#### Apply Patches
-
-1. ```cd ~/dev/mame-mame0211```
-2. ``` patch -p0 < ~/dev/mame-diffs-master/mame0211/groovymame_017m.diff```
-3. ```patch -p0 < ~/dev/mame-diffs-master/mame0211/suppression.diff```
-4. ```patch -p0 < ~/dev/mame-diffs-master/mame0211/various_fixes.diff```
-
-#### Compile MAME
-
-1. ```cd ~/dev/mame-mame0211```
-2. ```make```
-
-## Line returns
-
-Patches were converted to unix line returns using dos2unix. This section of the guide is only for my personal reference, or anyone willing to fork and help contribute to the project.
-
-#### To install on Mac OS X using Homebrew:
+###### Install dos2unix (Mac OS X)
 
 1. ```brew update```
 2. ```brew install dos2unix```
 
-#### Mac (\r) to Unix (\n)
+###### Usage of dos2unix
 
-```mac2unix -n file.mac.txt file.unix.txt```
+* ```mac2unix -n patch.mac.diff patch.unix.diff``` *Mac (\r) to Unix (\n)*
+* ```dos2unix -n patch.windows.diff patch.unix.diff``` *Windows (\r\n) to Unix (\n)*
 
-#### Windows (\r\n) to Unix (\n)
 
-```dos2unix -n file.windows.txt file.unix.txt```
+#### Compressing Binary
+
+###### Prerequisites (Arch Linux)
+
+Install zip package: ```sudo pacman -S zip```
+
+###### Compress Binary
+
+1. ```cd ~/mame0211```
+2. ```zip mame64_linux.zip mame64``` *linux/mac*
+
+#### Transfer To USB Disk (linux on virtual operating system install)
+
+This can simplify transfering out of a virtual operating system install. Connect and unmount disk in host operating system. In virtualbox, click on your session and then Settings -> Ports -> USB -> USB Device Filters -> + -> *your usb device*. During an active session, click on the USB symbol and select your usb device.
+
+###### List Available USB Devices
+
+```lsusb```
+
+###### Show Disk Identifiers
+
+```sudo fdisk -l```
+
+###### Create Disk Label
+
+```sudo mkdir /media/usb_drive```
+
+###### Mount Disk
+```sudo mount /media/usb_drive```
+
+###### Copy Compressed Binary
+
+1. ```cd ~/mame0211```
+2. ```cp mame64_linux.zip /media/usb_drive/mame64_linux.zip```
+
+###### Unmount Disk
+```sudo umount /media/usb_drive```
