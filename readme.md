@@ -97,6 +97,17 @@ We do not want to loose our patched kernel for 15khz.
 
 ```sudo pacman -S unzip```
 
+###### Install endlines (Mac OS X and Linux)
+
+I have had issues patching with files within mame source and patches having different line endings. It's best to make sure all line endings are uniform before patching.
+
+1. ```cd ~/```
+2. ```curl -o endlines-master.zip https://github.com/mdolidon/endlines/archive/master.zip && unzip endlines-master.zip```
+3. ```cd endlines-master```
+4. ```make```
+5. ```make test```
+6. ```sudo make install```
+
 ###### Install Dependancies Required to Compile MAME (Arch Linux)
 
 ```sudo pacman -S base-devel git sdl2 gconf sdl2_ttf gcc qt5```
@@ -111,7 +122,6 @@ It is not required to install the complete xcode package for the command line de
 4. ```curl -O http://libsdl.org/release/SDL2-2.0.9.dmg && hdiutil attach SDL2-2.0.9.dmg``` *2.0.4+ required, take note of disk name from output*
 5. ```hdiutil detach /dev/disk1s2``` *use disk name from step 4*
 
-
 #### Download
 
 *substitute version number accordingly*
@@ -125,16 +135,22 @@ It is not required to install the complete xcode package for the command line de
 	3. ```curl -O https://raw.githubusercontent.com/keilmillerjr/mame-diffs/master/mame0211/suppression.diff```
 	4. ```curl -O https://raw.githubusercontent.com/keilmillerjr/mame-diffs/master/mame0211/various_fixes.diff```
 
+#### Convert Line Endings to Unix
+
+1. ```cd ~/mame0211```
+2. ```endlines check -r *```
+3. ```endlines unix -kr *```
+
 #### Apply Patches
 
-1. ```cd ~/mame-mame0211```
+1. ```cd ~/mame0211```
 2. ```patch -p0 < groovymame_017n.diff```
 3. ```patch -p0 < suppression.diff```
 4. ```patch -p0 < various_fixes.diff```
 
 #### Compile MAME
 
-1. ```cd ~/mame-mame0211```
+1. ```cd ~/mame0211```
 2. ```make```
 
 ## Precompiled Binaries
@@ -154,20 +170,16 @@ Linux and mac binaries have groovymame, suppression and various fixes patches ap
 
 ## Contributing
 
-#### Line Returns in Patches
+#### Line Endings
 
-###### Install dos2unix (Mac OS X)
+Please be sure you use endlines to make sure all patches are converted to unix.
 
-1. ```brew update```
-2. ```brew install dos2unix```
-
-###### Usage of dos2unix
-
-* ```mac2unix -n patch.mac.diff patch.unix.diff``` *Mac (\r) to Unix (\n)*
-* ```dos2unix -n patch.windows.diff patch.unix.diff``` *Windows (\r\n) to Unix (\n)*
-
+1. ```cd ~/mame-diffs```
+2. ```endlines unix -kr *```
 
 #### Compressing Binary
+
+Please be sure that the binary is not mixed up with any other version, and is in the appropriate versioned subdirectory.
 
 ###### Prerequisites (Arch Linux)
 
