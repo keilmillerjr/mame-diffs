@@ -128,7 +128,8 @@ It is not required to install the complete xcode package for the command line de
 
 1. Download MAME Source
 	1. ```cd ~/```
-	2. ```sudo curl -O -L https://github.com/mamedev/mame/releases/download/mame0211/mame0211s.zip && unzip mame0211s.zip && unzip mame.zip -d mame0211 && rm mame.zip```
+	2. ```sudo curl -O -L https://github.com/mamedev/mame/releases/download/mame0211/mame0211s.zip && unzip mame0211s.zip && unzip mame.zip -d mame0211```
+	3. ```rm mame.zip```
 2. Download Patches
 	1. ```cd mame0211```
 	2. ```curl -O https://raw.githubusercontent.com/keilmillerjr/mame-diffs/master/mame0211/groovymame_017n.diff```
