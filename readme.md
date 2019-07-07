@@ -145,9 +145,9 @@ It is not required to install the complete xcode package for the command line de
 #### Apply Patches
 
 1. ```cd ~/mame0211```
-2. ```patch -p0 < groovymame_017n.diff```
-3. ```patch -p0 < suppression.diff```
-4. ```patch -p0 < various_fixes.diff```
+2. ```patch -p0 -E < groovymame_017n.diff```
+3. ```patch -p0 -E < suppression.diff```
+4. ```patch -p0 -E < various_fixes.diff```
 
 #### Compile MAME
 
