@@ -102,8 +102,8 @@ We do not want to loose our patched kernel for 15khz.
 I have had issues patching with files within mame source and patches having different line endings. It's best to make sure all line endings are uniform before patching.
 
 1. ```cd ~/```
-2. ```curl -o endlines-master.zip https://github.com/mdolidon/endlines/archive/master.zip && unzip endlines-master.zip```
-3. ```cd endlines-master```
+2. ```curl -L -o endlines-1.9.2.zip https://github.com/mdolidon/endlines/releases/tag/1.9.2 && unzip endlines-1.9.2.zip```
+3. ```cd endlines-1.9.2```
 4. ```make```
 5. ```make test```
 6. ```sudo make install```
