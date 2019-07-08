@@ -207,6 +207,8 @@ Install zip package: ```sudo pacman -S zip```
 
 This can simplify transfering out of a virtual operating system install. Connect and unmount disk in host operating system. In virtualbox, click on your session and then Settings -> Ports -> USB -> USB Device Filters -> + -> *your usb device*. During an active session, click on the USB symbol and select your usb device.
 
+*substitute device path accordingly*
+
 ###### List Available USB Devices
 
 ```lsusb```
@@ -220,12 +222,13 @@ This can simplify transfering out of a virtual operating system install. Connect
 ```sudo mkdir /media/usb_drive```
 
 ###### Mount Disk
-```sudo mount /media/usb_drive```
+```sudo mount /dev/sdb1 /media/usb_drive```
 
 ###### Copy Compressed Binary
 
 1. ```cd ~/mame0211```
-2. ```cp mame64_linux.zip /media/usb_drive/mame64_linux.zip```
+2. ```mkdir /media/usb_drive/mame0211```
+3. ```cp mame64_linux.zip /media/usb_drive/mame0211/mame64_linux.zip```
 
 ###### Unmount Disk
 ```sudo umount /media/usb_drive```
