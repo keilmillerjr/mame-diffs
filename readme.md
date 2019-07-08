@@ -120,7 +120,8 @@ It is not required to install the complete xcode package for the command line de
 2. A software update popup window will appear that asks: "The xcode-select command requires the command line developer tools. Would you like to install the tools now?". Click "Install", then agree to the Terms of Service when requested.
 3. ```cd ~/```
 4. ```curl -O http://libsdl.org/release/SDL2-2.0.9.dmg && hdiutil attach SDL2-2.0.9.dmg``` *2.0.4+ required, take note of disk name from output*
-5. ```hdiutil detach /dev/disk1s2``` *use disk name from step 4*
+6. ```sudo cp -R SDL2/SDL2.framework /Library/Frameworks/SDL2.framework```
+7. ```hdiutil detach /dev/disk1s2``` *use disk name from step 4*
 
 #### Download
 
@@ -153,6 +154,17 @@ It is not required to install the complete xcode package for the command line de
 
 1. ```cd ~/mame0211```
 2. ```make```
+
+#### Warning Errors
+
+If you get ```cc1plus: all warnings being treated as errors``` output while compiling, you can suppress these warning errors.
+
+1. ```cd ~/mame0211```
+2. ```nano makefile```
+3. Change line 17: ```# NOWERROR``` to: ```NOWERROR```
+4. Save the buffer *(ctrl+o)*.
+5. Exit nano *(ctrl+x)*.
+6. ```make```
 
 ## Precompiled Binaries
 
