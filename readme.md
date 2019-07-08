@@ -97,17 +97,6 @@ We do not want to loose our patched kernel for 15khz.
 
 ```sudo pacman -S unzip```
 
-###### Install endlines (Mac OS X and Linux)
-
-I have had issues patching with files within mame source and patches having different line endings. It's best to make sure all line endings are uniform before patching.
-
-1. ```cd ~/```
-2. ```curl -L -o endlines-1.9.2.zip https://github.com/mdolidon/endlines/releases/tag/1.9.2 && unzip endlines-1.9.2.zip```
-3. ```cd endlines-1.9.2```
-4. ```make```
-5. ```make test```
-6. ```sudo make install```
-
 ###### Install Dependancies Required to Compile MAME (Arch Linux)
 
 ```sudo pacman -S base-devel git sdl2 gconf sdl2_ttf gcc qt5```
@@ -122,6 +111,17 @@ It is not required to install the complete xcode package for the command line de
 4. ```curl -O http://libsdl.org/release/SDL2-2.0.9.dmg && hdiutil attach SDL2-2.0.9.dmg``` *2.0.4+ required, take note of disk name from output*
 6. ```sudo cp -R SDL2/SDL2.framework /Library/Frameworks/SDL2.framework```
 7. ```hdiutil detach /dev/disk1s2``` *use disk name from step 4*
+
+###### Install endlines (Mac OS X and Linux)
+
+I have had issues patching with files within mame source and patches having different line endings. It's best to make sure all line endings are uniform before patching. Must follow *Install Dependancies Required to Compile MAME* section first.
+
+1. ```cd ~/```
+2. ```curl -L -o endlines-1.9.2.zip https://github.com/mdolidon/endlines/releases/tag/1.9.2 && unzip endlines-1.9.2.zip```
+3. ```cd endlines-1.9.2```
+4. ```make```
+5. ```make test```
+6. ```sudo make install```
 
 #### Download
 
