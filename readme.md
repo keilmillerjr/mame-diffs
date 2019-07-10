@@ -2,7 +2,7 @@
 
 by [Keil Miller Jr](http://keilmiller.com)
 
-I did not create these patches. I am simply hosting them all together in one easy package, including binaries that I compiled. Video related patches pertain to Windows. While other patches are operating system agnostic, the guide assumes you are using **arch linux**. Compiling on mac will be very similar
+I did not create these patches. I am simply hosting them all together in one easy package, including binaries that I compiled. Video related patches pertain to Windows. All other patches are operating system agnostic. The guide is oriented towards **Arch Linux** and Mac OS X.
 
 MAME License is [included](LICENSE.md) in this repository, and can be found [here](https://github.com/mamedev/mame/blob/master/LICENSE.md). It must be included with the binary.
 
@@ -10,34 +10,42 @@ MAME License is [included](LICENSE.md) in this repository, and can be found [her
 
 #### d3d8
 
-[Description](http://forum.arcadecontrols.com/index.php/topic,154799.msg1671575.html#msg1671575)
+[by Calamity](http://forum.arcadecontrols.com/index.php/topic,151459.0.html)
+
 
 > D3D8 fix is added solution for bypassing message "non-power-of-two textures" for old DX8 video cards.
+>
+> [quote source](http://forum.arcadecontrols.com/index.php/topic,154799.msg1671575.html#msg1671575)
 
-[Patch Source](http://forum.arcadecontrols.com/index.php/topic,151459.0.html) by Calamity
 
 #### d3d9ex
 
-[Support and Advantages](http://geedorah.com/eiusdemmodi/forum/viewtopic.php?pid=985#p985)
+[by Calamity](http://forum.arcadecontrols.com/index.php/topic,151459.0.html)
+
 > Groovy MAME 0.170 under Windows 7 can use Direct Draw, Direct 3-D 9 and Direct 3-D 9 Ex, being the latter the recommended API. Notice that Direct Draw stopped being supported by MAME in version 0.171, whereas Direct 3-D 9 Ex only is supported by Groovy MAME 0.167 onwards.
 >
 > The advantage of Direct 3-D 9 Ex over Direct 3-D 9 is that, unlike with the latter, there's no need to enable frame delay in order to force the frame latency to the minimum allowed by the driver and therefore avoid the dreaded frame queues present in the ATI video drivers when Direct 3-D is used, which add a lag of 2-3 frames.
+>
+> [quote source](http://geedorah.com/eiusdemmodi/forum/viewtopic.php?pid=985#p985)
 
-[Patch Source](http://forum.arcadecontrols.com/index.php/topic,151459.0.html) by Calamity
 
 #### groovymame
 
-[Patch Source](http://forum.arcadecontrols.com/index.php/topic,151459.0.html) by Calamity
+[by Calamity](http://forum.arcadecontrols.com/index.php/topic,151459.0.html)
 
 #### suppression
 
-The official MAME has "skip_gameinfo" feature built in. It will skip the game info screen. The suppression patch, also known as nonag, will also remove the compatibility/disclaimer warning screen when used with the previously mentioned option. Using a binary with this patch applied is not recommended when reporting bugs or issues.
+[by MKChamp](http://mamestuff.lowtrucks.net/MKChamp/)
 
-[Patch Source](http://mamestuff.lowtrucks.net/MKChamp/) by MKChamp
+The official MAME has "skip_gameinfo" feature built in. It will skip the game info screen. The suppression patch, also known as nonag, will also remove the compatibility/disclaimer warning screen when used with the previously mentioned option. Using a binary with this patch applied is not recommended when reporting bugs or issues.
 
 #### various fixes
 
+[by haynor666](http://forum.arcadecontrols.com/index.php/topic,154799.0.html)
+
 >based on official sources plus extra modifications imported from ARCADE http://arcade.mameworld.info (new derrative based on MAMEUIFX) and no nag patch. Some of those changes created by me.
+>
+> [quote source](http://forum.arcadecontrols.com/index.php/topic,154799.msg1623604.html#msg1623604)
 
 These modifications are current for the MAME 0.211 patch.
 
@@ -64,14 +72,14 @@ These modifications are current for the MAME 0.211 patch.
 > - slow rendering fix for namconb1
 > - more accurate video timings in Green Beret
 > - swapped some IRQ handling in megasys1 driver
-
-[Patch Source](http://forum.arcadecontrols.com/index.php/topic,154799.0.html) by haynor666
+>
+> [quote source](http://forum.arcadecontrols.com/index.php/topic,154799.msg1623604.html#msg1623604)
 
 ## Patching Sequence:
 
 1. GroovyMame
 2. Video mode
-	* d3d8 *(old video card compatibility)*
+	* d3d8 *(windows, old video card compatibility)*
 	* d3d9ex *(windows vista and later, for less video lag)*
 3. Suppression
 4. Various Fixes
@@ -150,11 +158,6 @@ I have had issues patching with files within mame source and patches having diff
 3. ```patch -p0 -E < suppression.diff```
 4. ```patch -p0 -E < various_fixes.diff```
 
-#### Compile MAME
-
-1. ```cd ~/mame0211```
-2. ```make```
-
 #### Warning Errors
 
 If you get ```cc1plus: all warnings being treated as errors``` output while compiling, you can suppress these warning errors.
@@ -166,9 +169,20 @@ If you get ```cc1plus: all warnings being treated as errors``` output while comp
 5. Exit nano *(ctrl+x)*.
 6. ```make```
 
+#### Compile MAME
+
+1. ```cd ~/mame0211```
+2. ```make```
+
 ## Precompiled Binaries
 
-Linux and mac binaries have groovymame, suppression and various fixes patches applied.
+Precompiled Binaries have the following patches applied:
+
+| Patch         | Linux | Mac OS X |
+| --------------| ----- | -------- |
+| GroovyMAME    | yes   | no       |
+| Suppression   | yes   | yes      |
+| Various Fixes | yes   | yes      |
 
 #### Prerequisites
 
