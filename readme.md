@@ -172,7 +172,9 @@ If you get ```cc1plus: all warnings being treated as errors``` output while comp
 #### Compile MAME
 
 1. ```cd ~/mame0211```
-2. ```make```
+2. You can use ```make``` without any flags, or speed things up with the Parrallen Execultion (multi-processing) jobs flag. Each job can take up to 1GB to 1.5GB of RAM. Lower this value if LogicalCores>=RAM.
+	1. Linux: ```make -j$(nproc)```
+	2. Mac OS X: ```make -j$(sysctl -n hw.logicalcpu)```
 
 ## Precompiled Binaries
 
