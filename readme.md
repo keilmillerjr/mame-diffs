@@ -8,6 +8,20 @@ MAME License is [included](LICENSE.md) in this repository, and can be found [her
 
 ## Patch Descriptions
 
+#### OS X Min 10.6
+
+[by Keil Miller Jr](https://github.com/keilmillerjr/mame-diffs)
+
+> This also happens with upstream GENie, and I've found the problem. Mojave, as you may know, is Snow Leopard 2: Electric Boogaloo. Except instead of stripping PowerPC from everything it strips 32-bit i686 from everything. Part of this is that you can no longer build targeting pre-Snow Leopard OSes, and GENie attempts to maintain functionality all the way back to Tiger.
+>
+> I'm testing a fix now, if I can do a full MAME build with it I'll poke GENie upstream and submit to MAME's git.
+>
+> Here's the change: [github link](https://github.com/mamedev/mame/commit/bb2eaa50ffe2bfbfc8db30be78170e80f843aa1e)
+>
+> Mojave [10.14] removed the ability to build 32-bit and so the minimum target OS available bumped up from Tiger [10.4] to Snow Leopard [10.6]. This should work all the way back to Snow Leopard [10.6], compiler permitting.
+> 
+> [quote by R. Belmont](https://forums.bannister.org/ubbthreads.php?ubb=printthread&Board=1&main=8895&type=thread)
+
 #### d3d8
 
 [by Calamity](http://forum.arcadecontrols.com/index.php/topic,151459.0.html)
@@ -77,12 +91,13 @@ These modifications are current for the MAME 0.211 patch.
 
 ## Patching Sequence:
 
-1. GroovyMame
-2. Video mode
+1. OS X Min 10.6 (required to compile mame 0.202 on Mac OS X 10.14+)
+2. GroovyMame
+3. Video mode
 	* d3d8 *(windows, old video card compatibility)*
 	* d3d9ex *(windows vista and later, for less video lag)*
-3. Suppression
-4. Various Fixes
+4. Suppression
+5. Various Fixes
 
 ## Compile
 
